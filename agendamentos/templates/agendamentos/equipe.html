@@ -1,0 +1,184 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Equipe{% endblock %}
+{% block nav_equipe %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px 16px; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid var(--cor-borda); align-items: start; }
+    .form-grid > div { display: flex; flex-direction: column; gap: 5px; min-height: 86px; }
+    .form-grid input:not([type="checkbox"]):not([type="radio"]), .form-grid select { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; min-height: 42px; }
+    .form-grid input[type="file"] { min-height: 42px; padding: 7px 10px; }
+    .form-grid input[type="file"]::file-selector-button { border: 0; border-radius: 4px; padding: 6px 10px; margin-right: 8px; background: var(--cor-destaque); color: var(--cor-btn-texto); font-weight: 700; cursor: pointer; }
+    .checkbox-row { flex-direction: row !important; align-items: center; gap: 10px !important; color: #b0b0b0; font-weight: bold; }
+    .btn-add-eq { background: var(--cor-destaque); color: var(--cor-btn-texto); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; height: fit-content; align-self: flex-end; }
+    .btn-edit { color: var(--cor-destaque); text-decoration: none; font-weight: bold; margin-left: auto;}
+    .foto-input-help, .field-help { color: var(--cor-muted); font-size: .76rem; line-height: 1.35; min-height: 2.1em; }
+    .form-field--full { grid-column: 1 / -1; min-height: 0 !important; }
+    .equipe-toggle-group { grid-column: 1 / -1; display: grid !important; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 18px !important; min-height: 0 !important; align-items: center; margin-top: 8px; }
+    .equipe-toggle-group .toggle-switch { min-height: 32px; font-size: .9rem; line-height: 1.25; }
+    .equipe-toggle-group .btn-add-eq { justify-self: end; align-self: center; min-width: 150px; }
+    @media (max-width: 720px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .equipe-toggle-group { grid-template-columns: 1fr; }
+        .equipe-toggle-group .btn-add-eq { justify-self: stretch; width: 100%; }
+    }
+    .membro-avatar {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--cor-borda);
+        background: var(--cor-input);
+        flex: 0 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Gerenciar Equipe</h2>
+<p>Cadastre novos profissionais ou altere permissões de acesso.</p>
+
+{% if pode_editar %}
+<form method="post" action="{% url 'adicionar_membro' %}" class="form-grid" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div><label>Nome do Profissional</label><input type="text" name="nome" required maxlength="100"></div>
+    <div><label>Usuário de Login</label><input type="text" name="username" required maxlength="150"></div>
+    <div><label>E-mail Cadastral</label><input type="email" name="email" maxlength="254" placeholder="profissional@email.com"></div>
+    <div><label for="telefone-equipe">Telefone / WhatsApp</label><input id="telefone-equipe" type="tel" name="telefone" maxlength="20" placeholder="{{ telefone_placeholder }}" aria-describedby="telefone-equipe-help" data-phone-mask inputmode="tel"><span id="telefone-equipe-help" class="foto-input-help">Obrigatório apenas se o perfil for Dono.</span></div>
+    <div><label>Senha Provisória</label><input type="password" name="senha" required maxlength="128"></div>
+    <div><label>Confirmar Senha</label><input type="password" name="senha_confirmacao" required maxlength="128"></div>
+    
+    <div>
+        <label>Foto do Profissional</label>
+        <input type="file" name="foto_perfil" accept="image/jpeg,image/png,image/webp">
+        <span class="foto-input-help">Opcional. O sistema otimiza para 300x300 px, ate 2 MB.</span>
+    </div>
+
+    <div class="form-field--full">
+        <label>Dias de Trabalho</label>
+        <div class="dias-semana">
+            <label class="dia-btn"><input type="checkbox" name="t_domingo"><span>Dom</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_segunda" checked><span>Seg</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_terca" checked><span>Ter</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_quarta" checked><span>Qua</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_quinta" checked><span>Qui</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_sexta" checked><span>Sex</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_sabado" checked><span>Sáb</span></label>
+        </div>
+    </div>
+
+    <div>
+        <label>Forma de Pagamento</label>
+        <select name="tipo_remuneracao">
+            <option value="COMISSAO">Apenas Comissão</option>
+            <option value="FIXO">Salário Fixo Mensal</option>
+            <option value="AMBOS">Fixo + Comissão</option>
+        </select>
+    </div>
+    <div>
+        <label>Salário Fixo (R$)</label>
+        <input type="number" step="0.01" name="salario_fixo" value="0.00" min="0" max="999999.99">
+    </div>
+    <div>
+        <label>Porcentagem Comissão (%)</label>
+        <input type="number" step="0.01" name="porcentagem_comissao" value="30.00" min="0" max="100">
+    </div>
+    <div>
+        <label>Dia do Pagamento</label>
+        <input type="number" name="dia_pagamento_salario" min="1" max="28" placeholder="Ex: 5">
+        <span class="field-help">Obrigatório para salário fixo ou fixo + comissão.</span>
+    </div>
+    
+    <div class="equipe-toggle-group">
+        <label class="toggle-switch">
+            <input type="checkbox" name="receber_confirmacao_whatsapp" checked>
+            Receber confirmação de agendamento por WhatsApp
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="exibir_cupons_publico">
+            Exibir cupons na página pública deste barbeiro
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="aceita_agendamentos_online" checked>
+            Disponível para agendamentos de clientes
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="is_gerente">
+            Dar permissão de Gerente (acesso expandido)
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="is_dono">
+            Dar permissão de Dono (acesso total)
+        </label>
+        <button type="submit" class="btn-add-eq">+ Contratar</button>
+    </div>
+    
+</form>
+{% else %}
+<div class="alert-erro" style="background:#1a1a1a; border-color:#333; color:#888; margin-bottom:20px;">Você tem acesso de leitura. Apenas o Dono pode contratar, editar ou desligar funcionários.</div>
+{% endif %}
+
+<section class="agenda-hoje">
+    <h2>Funcionários Cadastrados</h2>
+    
+    {% regroup equipe by ativo as equipe_agrupada %}
+    
+    {% for grupo in equipe_agrupada %}
+        <h3 style="margin-top: 30px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 10px; color: {% if grupo.grouper %}#81c784{% else %}#ef5350{% endif %};">
+            {% if grupo.grouper %}<span class="svg-icon icon-check" aria-hidden="true"></span> Profissionais Ativos{% else %}<span class="svg-icon icon-x" aria-hidden="true"></span> Profissionais Desligados{% endif %}
+        </h3>
+        
+        <div class="lista-agendamentos">
+            {% for membro in grupo.list %}
+                <div class="item-agenda {% if not membro.ativo %}cancelado{% endif %}" style="{% if not membro.ativo %}border: 1px solid #ef5350;{% endif %}">
+                    {% if membro.foto_perfil %}
+                        <img src="{{ membro.foto_perfil.url }}" alt="" class="membro-avatar">
+                    {% else %}
+                        <img src="{% static 'agendamentos/img/avatar-placeholder.svg' %}" alt="" class="membro-avatar">
+                    {% endif %}
+                    <div class="info">
+                        <strong>{{ membro.nome }} {% if not membro.ativo %}(DESLIGADO){% endif %}</strong>
+                        <span><span class="svg-icon icon-phone" aria-hidden="true"></span>{{ membro.telefone|default:'Telefone não informado' }}</span>
+                        <span>Horário: {{ membro.hora_inicio }} às {{ membro.hora_fim }}</span>
+                        <span class="badge-barbeiro">
+                            {% if membro.is_dono %}Dono
+                            {% elif membro.is_gerente %}Gerente
+                            {% else %}Funcionário{% endif %}
+                        </span>
+                        {% if membro.exibir_cupons_publico %}
+                            <span style="color:#81c784; font-size:.82rem;"><span class="svg-icon icon-ticket" aria-hidden="true"></span> Cupons visíveis no agendamento público</span>
+                        {% endif %}
+                        {% if not membro.aceita_agendamentos_online %}
+                            <span style="color:#ffca75; font-size:.82rem;"><span class="svg-icon icon-alert" aria-hidden="true"></span>Oculto do agendamento público</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="acoes-agendamento">
+                        {% if pode_editar %}
+                        <a href="{% url 'editar_membro' membro.id %}" class="btn-acao btn-voltar" style="background-color: var(--cor-input);">Editar Perfil</a>
+                        
+                        {% if barbeiro.id == membro.id %}
+                            <span class="btn-acao" style="background-color: #333; color: #888; cursor: not-allowed; text-align: center; border: 1px solid #444;" title="Você não pode desligar a si mesmo">Seu Perfil</span>
+                        {% else %}
+                            {% if membro.ativo %}
+                                <form method="post" action="{% url 'alternar_status_funcionario' membro.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-acao btn-cancelar">Desligar</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'alternar_status_funcionario' membro.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-acao" style="background-color: #4CAF50; color: white;">Reativar</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

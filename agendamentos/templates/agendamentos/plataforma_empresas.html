@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Plataforma | Dashboard</title>
+    <style>
+        :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #0b100e; color: #edf3ef; }
+        header { padding: 18px clamp(20px, 5vw, 72px); border-bottom: 1px solid #29322e; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        header a, .link { color: #e0b95f; }
+        main { width: min(1380px, 95vw); margin: 30px auto 60px; display: grid; gap: 24px; }
+        section, .empresa-card { background: #151b18; border: 1px solid #2b3530; border-radius: 14px; padding: 22px; }
+        h1, h2, h3 { margin-top: 0; }
+        h1 { margin-bottom: 4px; }
+        .muted, small { color: #aebbb4; }
+        .contato-cliente { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 12px 0; color: #d5dfd9; }
+        .senha-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .senha-tools button { width: auto; background: #33463d; border: 1px solid #50675b; }
+        .senha-status { color: #9fd9b7; font-size: .8rem; align-self: center; }
+        .message { padding: 12px 15px; border-radius: 9px; background: #153c2c; border: 1px solid #2c7457; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .metric { background: #111713; border: 1px solid #2c3932; border-radius: 12px; padding: 17px; min-width: 0; }
+        .metric span { display: block; color: #9fada5; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
+        .metric strong { display: block; margin-top: 7px; font-size: 1.65rem; overflow-wrap: anywhere; }
+        .metric.alerta strong { color: #ff9b9b; }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, .6fr); gap: 24px; align-items: start; }
+        .empresa-lista { display: grid; gap: 15px; }
+        .empresa-card { padding: 18px; background: #111713; }
+        .empresa-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .empresa-topo h3 { margin-bottom: 4px; overflow-wrap: anywhere; }
+        .badges { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+        .badge { border-radius: 999px; padding: 5px 9px; font-size: .73rem; font-weight: 800; background: #26322c; color: #c7d2cc; }
+        .badge.ativo, .badge.EM_DIA { background: #153c2c; color: #8de0b3; }
+        .badge.inativo, .badge.ATRASADO { background: #481d1d; color: #ffadad; }
+        .badge.PENDENTE { background: #493b12; color: #ffe08a; }
+        .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+        .stat { padding: 10px; border-radius: 9px; background: #0c120f; color: #aebbb4; font-size: .76rem; min-width: 0; }
+        .stat strong { display: block; color: #edf3ef; margin-top: 3px; font-size: .95rem; overflow-wrap: anywhere; }
+        .acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .btn, button { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; padding: 10px 12px; font-weight: 800; background: #c89b3c; color: #111; cursor: pointer; text-decoration: none; font: inherit; }
+        .btn.secundario, button.secundario { background: #26322c; color: #edf3ef; border: 1px solid #3a4941; }
+        .btn.perigo, button.perigo { background: #8f2d2d; color: #fff; }
+        .btn.sucesso, button.sucesso { background: #287a52; color: #fff; }
+        form.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        form.inline input[type="text"] { width: min(260px, 100%); }
+        details { margin-top: 12px; border-top: 1px solid #28332e; padding-top: 11px; }
+        summary { cursor: pointer; color: #dcb45f; font-weight: 750; }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 14px; }
+        .full { grid-column: 1 / -1; }
+        label { display: block; font-size: .82rem; margin-bottom: 6px; color: #d8e2dc; }
+        input, select, textarea { width: 100%; min-width: 0; max-width: 100%; padding: 10px 11px; border: 1px solid #3a4741; border-radius: 8px; background: #0e1411; color: #fff; font: inherit; }
+        input[type="color"] { height: 44px; padding: 4px; }
+        input[type="checkbox"] { width: auto; margin-right: 7px; }
+        textarea { resize: vertical; }
+        .check label { display: flex; align-items: center; margin-top: 22px; }
+        .helptext { display: block; margin-top: 5px; font-size: .75rem; color: #92a098; }
+        .errorlist { color: #ff9b9b; margin: 5px 0; padding-left: 18px; }
+        .form-actions { margin-top: 14px; display: flex; justify-content: flex-end; }
+        .danger-box { border-color: #5d2929; background: #211313; }
+        .danger-box summary { color: #ff9b9b; }
+        .import-box { border: 1px dashed #485850; padding: 14px; border-radius: 10px; margin-top: 14px; }
+        .import-box button { margin-top: 10px; width: 100%; }
+        @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 720px) { header { align-items: flex-start; flex-direction: column; } .dashboard-grid, .grid, .stats { grid-template-columns: 1fr; } .full { grid-column: auto; } .empresa-topo { flex-direction: column; } .badges { justify-content: flex-start; } .acoes, form.inline { align-items: stretch; flex-direction: column; } .btn, button { width: 100%; } }
+    </style>
+</head>
+<body>
+<header>
+    <div><strong>Controle da Plataforma</strong><br><small>Acesso exclusivo de superuser</small></div>
+    <nav><a href="{% url 'health_check' %}">Health privado</a> · <a href="{% url 'metrics_check' %}">Métricas privadas</a> · <a href="{% url 'admin:index' %}">Django Admin</a> · <a href="{% url 'admin:logout' %}">Sair</a></nav>
+</header>
+<main>
+    {% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}
+
+    <section>
+        <h1>Dashboard dos freelas</h1>
+        <p class="muted">Visão privada da operação, contratos e saúde das barbearias gerenciadas.</p>
+        <div class="dashboard-grid">
+            <div class="metric"><span>Barbearias</span><strong>{{ resumo.total }}</strong><small>{{ resumo.ativas }} ativas · {{ resumo.inativas }} inativas</small></div>
+            <div class="metric {% if resumo.pagamentos_atrasados %}alerta{% endif %}"><span>Pagamentos atrasados</span><strong>{{ resumo.pagamentos_atrasados }}</strong><small>Requerem acompanhamento</small></div>
+            <div class="metric"><span>Receita recorrente prevista</span><strong>R$ {{ resumo.receita_recorrente_prevista|floatformat:2 }}</strong><small>Contratos ativos cadastrados</small></div>
+            <div class="metric"><span>Uso nos últimos 30 dias</span><strong>{{ resumo.agendamentos_30d }}</strong><small>agendamentos · {{ resumo.clientes }} clientes totais</small></div>
+            <div class="metric"><span>Receita operacional 30d</span><strong>R$ {{ resumo.receita_operacional_30d|floatformat:2 }}</strong><small>Entradas registradas pelos tenants</small></div>
+            <div class="metric"><span>Barbearias operando</span><strong>{{ resumo.ativas }}</strong><small>de {{ resumo.total }} cadastradas</small></div>
+        </div>
+    </section>
+
+    <div class="layout">
+        <section>
+            <h2>Barbearias gerenciadas</h2>
+            <div class="empresa-lista">
+                {% for item in empresas %}
+                <article class="empresa-card">
+                    <div class="empresa-topo">
+                        <div>
+                            <h3>{{ item.obj.nome }}</h3>
+                            <small>{{ item.obj.slug }}.{{ tenant_base_domain }} · criado em {{ item.obj.data_cadastro|date:'d/m/Y' }}</small>
+                        </div>
+                        <div class="badges">
+                            <span class="badge {% if item.obj.ativo %}ativo{% else %}inativo{% endif %}">{% if item.obj.ativo %}ATIVA{% else %}INATIVA{% endif %}</span>
+                            <span class="badge {{ item.obj.status_pagamento }}">{{ item.obj.get_status_pagamento_display|upper }}</span>
+                        </div>
+                    </div>
+
+                    {% if not item.obj.ativo and item.obj.motivo_inativacao %}<p class="muted"><strong>Motivo:</strong> {{ item.obj.motivo_inativacao }}</p>{% endif %}
+                    <div class="contato-cliente">
+                        <span><strong>Contato:</strong> {{ item.proprietario.nome|default:'proprietário não identificado' }}</span>
+                        <span><strong>Telefone:</strong> {{ item.telefone_contato|default:'não informado' }}</span>
+                        <span><strong>E-mail:</strong> {{ item.email_contato|default:'não informado' }}</span>
+                    </div>
+                    <p class="muted">
+                        <strong>Termos da barbearia:</strong>
+                        {% if item.aceite_empresa %}
+                            aceitos por {{ item.aceite_empresa.usuario.username }} em {{ item.aceite_empresa.aceito_em|date:'d/m/Y H:i' }}
+                        {% else %}
+                            pendentes para a versão vigente
+                        {% endif %}
+                    </p>
+                    <div class="stats">
+                        <div class="stat">Membros<strong>{{ item.membros }}</strong></div>
+                        <div class="stat">Clientes<strong>{{ item.clientes }}</strong></div>
+                        <div class="stat">Agendamentos<strong>{{ item.agendamentos }}</strong></div>
+                        <div class="stat">Últimos 30 dias<strong>{{ item.agendamentos_30d }}</strong></div>
+                        <div class="stat">Receita operacional 30d<strong>R$ {{ item.receita_30d|floatformat:2 }}</strong></div>
+                    </div>
+                    <p class="muted">Último agendamento: {{ item.ultimo_agendamento|date:'d/m/Y'|default:'sem atividade' }} · Contrato: {{ item.obj.plano_contratado|default:'não informado' }}</p>
+
+                    <div class="acoes">
+                        {% if item.obj.ativo %}<a class="btn secundario" href="{{ item.url }}" target="_blank" rel="noopener">Abrir tenant</a>{% endif %}
+                        <a class="btn secundario" href="{% url 'exportar_empresa' item.obj.id %}">Exportar backup JSON</a>
+                        <form class="inline" method="post" action="{% url 'alternar_empresa' item.obj.id %}">
+                            {% csrf_token %}
+                            {% if item.obj.ativo %}
+                                <input type="hidden" name="novo_status" value="inativo">
+                                <input type="text" name="motivo_inativacao" maxlength="200" placeholder="Motivo da suspensão (opcional)">
+                                <button type="submit" class="perigo">Desativar e bloquear</button>
+                            {% else %}
+                                <input type="hidden" name="novo_status" value="ativo">
+                                <button type="submit" class="sucesso">Ativar e liberar</button>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <details>
+                        <summary>Editar controle comercial</summary>
+                        <form method="post" action="{% url 'atualizar_empresa' item.obj.id %}">
+                            {% csrf_token %}
+                            <div class="grid">
+                                {% for field in item.gestao_form %}
+                                <div class="{% if field.name == 'observacoes_internas' %}full{% endif %}">
+                                    {{ field.errors }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-actions"><button type="submit">Salvar controle comercial</button></div>
+                        </form>
+                    </details>
+
+                    <details class="danger-box">
+                        <summary>Excluir permanentemente</summary>
+                        <p class="muted">Exporte o backup antes. A exclusão remove dados e usuários vinculados; a restauração exige este JSON.</p>
+                        <form method="post" action="{% url 'excluir_empresa' item.obj.id %}">
+                            {% csrf_token %}
+                            <div class="grid">
+                                <div><label>Digite o slug <strong>{{ item.obj.slug }}</strong></label><input type="text" name="confirmar_slug" maxlength="63" autocomplete="off" required></div>
+                                <div><label>Sua senha de superuser</label><input type="password" name="senha_superuser" maxlength="128" autocomplete="current-password" required></div>
+                                <div class="full check"><label><input type="checkbox" name="confirmar_exclusao" required> Confirmo a exclusão permanente desta barbearia.</label></div>
+                            </div>
+                            <div class="form-actions"><button type="submit" class="perigo">Excluir barbearia definitivamente</button></div>
+                        </form>
+                    </details>
+                </article>
+                {% empty %}<p class="muted">Nenhuma empresa cadastrada.</p>{% endfor %}
+            </div>
+        </section>
+
+        <aside>
+            <section>
+                <h2>Nova barbearia</h2>
+                <p class="muted">Cria tenant, proprietário, configuração e serviço inicial.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    <div class="grid">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'slogan' or field.name == 'senha_superuser' %}full{% endif %} {% if field.field.widget.input_type == 'checkbox' %}check{% endif %}">
+                            {{ field.errors }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                            {% if field.name == 'senha_dono' %}
+                            <div class="senha-tools">
+                                <button type="button" id="gerar-senha-dono">Gerar senha segura</button>
+                                <span class="senha-status" id="senha-gerada-status" aria-live="polite"></span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-actions"><button type="submit">Criar tenant ativo</button></div>
+                </form>
+            </section>
+
+            <section style="margin-top:24px;">
+                <h2>Restaurar backup JSON</h2>
+                <p class="muted">Aceita somente backups exportados por esta plataforma. IDs e relações são preservados.</p>
+                <form method="post" action="{% url 'importar_empresa' %}" enctype="multipart/form-data" class="import-box">
+                    {% csrf_token %}
+                    <label>Arquivo de backup</label><input type="file" name="backup_json" accept="application/json,.json" required>
+                    <label style="margin-top:10px;">Sua senha de superuser</label><input type="password" name="senha_superuser" maxlength="128" autocomplete="current-password" required>
+                    <button type="submit">Validar e restaurar tenant</button>
+                </form>
+            </section>
+        </aside>
+    </div>
+</main>
+<script>
+(() => {
+    const botao = document.getElementById('gerar-senha-dono');
+    const senha = document.getElementById('id_senha_dono');
+    const confirmar = document.getElementById('id_confirmar_senha');
+    const status = document.getElementById('senha-gerada-status');
+    if (!botao || !senha || !confirmar || !window.crypto?.getRandomValues) return;
+
+    const grupos = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!@#$%&*+-_='];
+    const alfabeto = grupos.join('');
+    const indiceSeguro = (limite) => {
+        const teto = Math.floor(256 / limite) * limite;
+        const bytes = new Uint8Array(1);
+        do { crypto.getRandomValues(bytes); } while (bytes[0] >= teto);
+        return bytes[0] % limite;
+    };
+    const sortear = (chars) => chars[indiceSeguro(chars.length)];
+
+    botao.addEventListener('click', async () => {
+        const caracteres = grupos.map(sortear);
+        while (caracteres.length < 20) caracteres.push(sortear(alfabeto));
+        for (let i = caracteres.length - 1; i > 0; i -= 1) {
+            const j = indiceSeguro(i + 1);
+            [caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]];
+        }
+        const valor = caracteres.join('');
+        senha.value = valor;
+        confirmar.value = valor;
+        senha.type = 'text';
+        try {
+            await navigator.clipboard.writeText(valor);
+            status.textContent = 'Senha gerada e copiada. Entregue-a por canal seguro.';
+        } catch (_) {
+            status.textContent = 'Senha gerada. Copie o valor exibido antes de criar o tenant.';
+        }
+    });
+})();
+(() => {
+    const formatarTelefone = (digitos) => {
+        const valor = digitos.slice(0, 11);
+        if (valor.length <= 2) return valor.length ? `(${valor}` : '';
+        if (valor.length <= 6) return `(${valor.slice(0, 2)}) ${valor.slice(2)}`;
+        if (valor.length <= 10) return `(${valor.slice(0, 2)}) ${valor.slice(2, 6)}-${valor.slice(6)}`;
+        return `(${valor.slice(0, 2)}) ${valor.slice(2, 7)}-${valor.slice(7)}`;
+    };
+    document.querySelectorAll('[data-phone-mask]').forEach((input) => {
+        const aplicar = () => { input.value = formatarTelefone(input.value.replace(/\D/g, '')); };
+        if (input.value) aplicar();
+        input.addEventListener('input', aplicar);
+    });
+})();
+</script>
+</body>
+</html>

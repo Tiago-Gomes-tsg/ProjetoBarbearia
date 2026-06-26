@@ -1,0 +1,54 @@
+name: Monitorar deploy e acionar rollback
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  health-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ROLLBACK_WEBHOOK_URL: ${{ secrets.ROLLBACK_WEBHOOK_URL }}
+      ROLLBACK_WEBHOOK_TOKEN: ${{ secrets.ROLLBACK_WEBHOOK_TOKEN }}
+    steps:
+      - name: Aguardar o provedor iniciar o deploy
+        run: sleep 60
+
+      - name: Verificar readiness
+        id: health
+        env:
+          HEALTHCHECK_URL: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "Configure PRODUCTION_HEALTHCHECK_URL para ativar o health gate."
+            exit 1
+          fi
+
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error \
+              --max-time 10 \
+              "$HEALTHCHECK_URL" \
+              | python -c 'import json,sys; raise SystemExit(0 if json.load(sys.stdin).get("status") == "ok" else 1)'; then
+              echo "Deploy saudavel na tentativa $attempt."
+              exit 0
+            fi
+            sleep 20
+          done
+          exit 1
+
+      - name: Acionar rollback automatico
+        if: failure() && env.ROLLBACK_WEBHOOK_URL != ''
+        env:
+          FAILED_SHA: ${{ github.sha }}
+        run: |
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $ROLLBACK_WEBHOOK_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data "{\"failed_sha\":\"$FAILED_SHA\",\"reason\":\"health_check_failed\"}" \
+            "$ROLLBACK_WEBHOOK_URL"

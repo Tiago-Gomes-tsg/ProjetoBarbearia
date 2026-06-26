@@ -1,0 +1,125 @@
+{% extends 'agendamentos/base.html' %}
+{% block title %}Lista de Espera{% endblock %}
+{% block nav_espera %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cards-resumo { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 25px; }
+    .card-resumo { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 140px; text-align: center; }
+    .card-resumo .num { font-size: 2rem; font-weight: bold; margin: 6px 0 0; }
+    .card-resumo .leg { color: #888; font-size: 0.8rem; }
+    .espera-card {
+        background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px;
+        padding: 16px 20px; margin-bottom: 12px;
+        display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;
+    }
+    .espera-card.notificado { border-left: 4px solid var(--cor-destaque); }
+    .espera-card.aguardando { border-left: 4px solid #1976d2; }
+    .badge-aguardando { background:#1a2a3a; color:#64b5f6; padding:3px 9px; border-radius:4px; font-size:0.75rem; }
+    .badge-notificado  { background:#3a3010; color:var(--cor-destaque); padding:3px 9px; border-radius:4px; font-size:0.75rem; }
+    .badge-convertido  { background:#1b3a1b; color:#81c784; padding:3px 9px; border-radius:4px; font-size:0.75rem; }
+    .badge-expirado    { background:var(--cor-borda); color:#555;    padding:3px 9px; border-radius:4px; font-size:0.75rem; }
+    .acoes-espera { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-acao {
+        border: none; padding: 7px 12px; border-radius: 4px;
+        cursor: pointer; font-size: 0.8rem; font-weight: 600; white-space: nowrap;
+    }
+    .btn-notif   { background: #1a3a50; color: #64b5f6; }
+    .btn-convert { background: #1b5e20; color: #81c784; }
+    .btn-remover { background: transparent; color: #ef5350; border: 1px solid #ef5350 !important; }
+    .historico-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--cor-sidebar); font-size: 0.85rem; }
+    .historico-row:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Lista de Espera</h2>
+    <p>Clientes que solicitaram vaga quando a agenda estava cheia. Notifique-os quando um horário abrir.</p>
+</header>
+
+<div class="cards-resumo">
+    <div class="card-resumo" style="border-top:3px solid #1976d2;">
+        <p class="leg">Aguardando</p>
+        <p class="num" style="color:#64b5f6;">{{ esperas|length }}</p>
+    </div>
+    <div class="card-resumo" style="border-top:3px solid var(--cor-destaque);">
+        <p class="leg">Notificados</p>
+        <p class="num" style="color:var(--cor-destaque);">
+            {% with n=0 %}{% for e in esperas %}{% if e.status == 'notificado' %}{% endif %} {% endfor %}{{ esperas|length }}{% endwith %}
+        </p>
+    </div>
+    <div class="card-resumo" style="border-top:3px solid #81c784;">
+        <p class="leg">Convertidos (histórico)</p>
+        <p class="num" style="color:#81c784;">{{ historico|length }}</p>
+    </div>
+</div>
+
+<h3 style="color:#fff; margin-bottom:15px;">Em espera</h3>
+
+{% for e in esperas %}
+<div class="espera-card {{ e.status }}">
+    <div style="flex:1; min-width:200px;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
+            <strong style="color:#fff; font-size:1rem;">{{ e.cliente.nome }}</strong>
+            {% if e.status == 'aguardando' %}<span class="badge-aguardando">Aguardando</span>
+            {% elif e.status == 'notificado' %}<span class="badge-notificado">Notificado</span>{% endif %}
+        </div>
+        <p style="margin:0; color:#888; font-size:0.85rem;">
+            <span class="svg-icon icon-phone" aria-hidden="true"></span> {{ e.cliente.telefone }}
+            &nbsp;·&nbsp; <span class="svg-icon icon-barber" aria-hidden="true"></span> {{ e.barbeiro.nome }}
+            &nbsp;·&nbsp; <span class="svg-icon icon-calendar" aria-hidden="true"></span> {{ e.data|date:"d/m/Y" }}
+        </p>
+        <p style="margin:4px 0 0; color:#555; font-size:0.78rem;">
+            Na fila desde {{ e.data_entrada|date:"d/m H:i" }}
+        </p>
+    </div>
+    <div class="acoes-espera">
+        {% if e.status == 'aguardando' %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="notificar">
+            <input type="hidden" name="entrada_id" value="{{ e.id }}">
+            <button type="submit" class="btn-acao btn-notif"><span class="svg-icon icon-info" aria-hidden="true"></span> Marcar Notificado</button>
+        </form>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="converter">
+            <input type="hidden" name="entrada_id" value="{{ e.id }}">
+            <button type="submit" class="btn-acao btn-convert"><span class="svg-icon icon-check" aria-hidden="true"></span> Convertido</button>
+        </form>
+
+        <form method="post" onsubmit="return confirm('Remover esta entrada?')">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="remover">
+            <input type="hidden" name="entrada_id" value="{{ e.id }}">
+            <button type="submit" class="btn-acao btn-remover"><span class="svg-icon icon-x" aria-hidden="true"></span></button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<div style="text-align:center; padding:50px; color:#666; background:var(--cor-sidebar); border-radius:8px; border:1px dashed #333;">
+    <p style="font-size:1.5rem;">⏳</p>
+    <p>Nenhum cliente na lista de espera no momento.</p>
+    <p style="font-size:0.85rem; margin-top:5px;">Quando a agenda estiver cheia e um cliente solicitar vaga, aparece aqui.</p>
+</div>
+{% endfor %}
+
+{% if historico %}
+<h3 style="color:#666; margin-top:35px; margin-bottom:12px; font-size:0.95rem;">Histórico recente</h3>
+<div style="background:#1a1a1a; border:1px solid #222; border-radius:8px; padding:0 18px;">
+    {% for e in historico %}
+    <div class="historico-row">
+        <div>
+            <strong style="color:#888;">{{ e.cliente.nome }}</strong>
+            <span style="color:#555; margin-left:8px; font-size:0.8rem;">{{ e.barbeiro.nome }} — {{ e.data|date:"d/m/Y" }}</span>
+        </div>
+        {% if e.status == 'convertido' %}<span class="badge-convertido">Convertido</span>
+        {% else %}<span class="badge-expirado">Expirado</span>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

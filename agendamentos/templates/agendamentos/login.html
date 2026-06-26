@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="{{ cfg.tema_painel_padrao|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - {{ empresa.nome|default:"Painel Administrativo" }}</title>
+    {% if cfg.favicon %}
+    <link rel="icon" href="{{ cfg.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'agendamentos/img/favicon.svg' %}">
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'agendamentos/dashboard.css' %}">
+    <style>
+        {% if cfg %}
+        :root {
+            --cor-destaque: {{ cfg.cor_destaque }};
+            --cor-btn-texto: {{ cfg.cor_texto_botao }};
+            --theme-dark-fundo: {{ cfg.tema_escuro_fundo }};
+            --theme-dark-sidebar: {{ cfg.tema_escuro_sidebar }};
+            --theme-dark-card: {{ cfg.tema_escuro_card }};
+            --theme-dark-input: {{ cfg.tema_escuro_input }};
+            --theme-dark-borda: {{ cfg.tema_escuro_borda }};
+            --theme-dark-texto: {{ cfg.tema_escuro_texto }};
+            --theme-dark-texto-forte: {{ cfg.tema_escuro_texto_forte }};
+            --theme-dark-texto-suave: {{ cfg.tema_escuro_texto_suave }};
+            --theme-light-fundo: {{ cfg.tema_claro_fundo }};
+            --theme-light-sidebar: {{ cfg.tema_claro_sidebar }};
+            --theme-light-card: {{ cfg.tema_claro_card }};
+            --theme-light-input: {{ cfg.tema_claro_input }};
+            --theme-light-borda: {{ cfg.tema_claro_borda }};
+            --theme-light-texto: {{ cfg.tema_claro_texto }};
+            --theme-light-texto-forte: {{ cfg.tema_claro_texto_forte }};
+            --theme-light-texto-suave: {{ cfg.tema_claro_texto_suave }};
+        }
+        {% endif %}
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: var(--cor-fundo); margin: 0; }
+        .card-login { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); padding: 40px; border-radius: 8px; width: 100%; max-width: 380px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .card-login h2 { margin-top: 0; color: #fff; text-align: center; margin-bottom: 25px; }
+        .card-login h2 span { color: var(--cor-destaque); }
+        .input-block { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+        .input-block label { color: #aaa; font-size: 0.9rem; }
+        .input-block input { padding: 12px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 1rem; }
+        .btn-logar { width: 100%; padding: 12px; background: var(--cor-destaque); color: var(--cor-btn-texto); border: none; font-weight: bold; font-size: 1rem; border-radius: 6px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        .btn-logar:hover { background: #ffa726; }
+        .erro-mensagem { background: rgba(198, 40, 40, 0.2); border: 1px solid #c62828; color: #ef5350; padding: 10px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="card-login">
+        <h2>{% if cfg %}{{ cfg.nome_barbearia }}{% else %}Barbearia{% endif %}</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="erro-mensagem">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% if form.errors %}
+            <div class="erro-mensagem">
+                Usuário ou senha inválidos. Confira os dados e tente novamente.
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="input-block">
+                <label>Usuário</label>
+                <input type="text" name="username" required maxlength="150" autocomplete="username">
+            </div>
+            <div class="input-block">
+                <label>Senha</label>
+                <input type="password" name="password" required maxlength="128" autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-logar">Entrar no Sistema</button>
+        </form>
+    </div>
+</body>
+</html>

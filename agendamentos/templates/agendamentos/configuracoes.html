@@ -1,0 +1,774 @@
+{% extends 'agendamentos/base.html' %}
+{% load static l10n %}
+{% block title %}Configurações{% endblock %}
+{% block nav_config %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cfg-page { max-width: 1120px; }
+    .cfg-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+    .cfg-header h2 { margin: 0 0 6px; color: var(--cor-destaque); }
+    .cfg-header p { margin: 0; color: var(--cor-texto-suave); max-width: 680px; }
+    .cfg-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+        border-bottom: 1px solid var(--cor-borda);
+        padding-bottom: 10px;
+    }
+    .cfg-tab {
+        border: 1px solid var(--cor-borda);
+        background: var(--cor-card);
+        color: var(--cor-texto-suave);
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .cfg-tab.ativo {
+        color: var(--cor-btn-texto);
+        background: var(--cor-destaque);
+        border-color: var(--cor-destaque);
+    }
+    .tab-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);
+    }
+    .cfg-painel { display: none; }
+    .cfg-painel.ativo { display: block; }
+    .cfg-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+        gap: 22px;
+        align-items: start;
+    }
+    .cfg-card {
+        background: var(--cor-card);
+        border: 1px solid var(--cor-borda);
+        border-radius: 8px;
+        padding: 22px;
+        box-shadow: 0 14px 32px rgba(0,0,0,.14);
+    }
+    .cfg-card h3 { margin: 0 0 16px; color: var(--cor-texto-forte); font-size: 1.05rem; }
+    .cfg-card > p { color: var(--cor-texto-suave); margin: -6px 0 18px; line-height: 1.55; }
+    .cfg-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
+    .cfg-group label {
+        color: var(--cor-texto-suave);
+        font-size: .78rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+    .cfg-group input[type="text"],
+    .cfg-group input[type="date"],
+    .cfg-group input[type="file"],
+    .cfg-group textarea,
+    .cfg-group select {
+        padding: 11px 13px;
+        background: var(--cor-input);
+        border: 1px solid var(--cor-borda);
+        color: var(--cor-texto-forte);
+        border-radius: 7px;
+        font: inherit;
+        box-sizing: border-box;
+        width: 100%;
+    }
+    .cfg-group input:focus,
+    .cfg-group textarea:focus,
+    .cfg-group select:focus {
+        outline: none;
+        border-color: var(--cor-destaque);
+        box-shadow: 0 0 0 3px rgba(var(--cor-destaque-rgb), .16);
+    }
+    .cfg-help { color: var(--cor-muted); font-size: .8rem; line-height: 1.45; }
+    .notice-tone {
+        border-left-width: 6px !important;
+        font-weight: 800 !important;
+        transition: background .18s ease, border-color .18s ease;
+    }
+    .notice-tone.tom-azul { border-color: #2196f3; background: color-mix(in srgb, #2196f3 13%, var(--cor-input)); }
+    .notice-tone.tom-vermelho { border-color: #e53935; background: color-mix(in srgb, #e53935 13%, var(--cor-input)); }
+    .notice-tone.tom-amarelo { border-color: #fbc02d; background: color-mix(in srgb, #fbc02d 13%, var(--cor-input)); }
+    #aviso-preview-card.tom-azul { border-left-color: #2196f3; background: color-mix(in srgb, #2196f3 10%, var(--cor-card)); }
+    #aviso-preview-card.tom-vermelho { border-left-color: #e53935; background: color-mix(in srgb, #e53935 10%, var(--cor-card)); }
+    #aviso-preview-card.tom-amarelo { border-left-color: #fbc02d; background: color-mix(in srgb, #fbc02d 10%, var(--cor-card)); }
+    .cfg-photo-row {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 16px;
+        align-items: center;
+    }
+    .cfg-photo-preview {
+        width: 130px;
+        height: 92px;
+        border-radius: 8px;
+        border: 1px solid var(--cor-borda);
+        object-fit: cover;
+        background: var(--cor-input);
+    }
+    .cfg-photo-preview.notice {
+        width: 160px;
+        height: 96px;
+    }
+    .notice-window-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .theme-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .theme-choice span {
+        min-height: 86px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid var(--cor-borda);
+        border-radius: 8px;
+        padding: 14px;
+        color: var(--cor-texto-forte);
+        cursor: pointer;
+        background: var(--cor-input);
+    }
+    .theme-choice small { color: var(--cor-texto-suave); font-weight: 500; }
+    .theme-choice input:checked + span {
+        border-color: var(--cor-destaque);
+        box-shadow: 0 0 0 3px rgba(var(--cor-destaque-rgb), .16);
+    }
+    .theme-color-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .theme-color-grid .cfg-group { margin-bottom: 0; }
+    .theme-color-grid input[type="color"] {
+        height: 42px;
+        padding: 3px;
+        cursor: pointer;
+    }
+    .reset-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px dashed var(--cor-borda);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--cor-input) 52%, transparent);
+    }
+    .btn-restaurar {
+        border: 1px solid var(--cor-borda);
+        background: var(--cor-card);
+        color: var(--cor-texto-forte);
+        border-radius: 7px;
+        padding: 10px 14px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .btn-restaurar:hover { border-color: var(--cor-destaque); color: var(--cor-destaque); }
+    .paleta { display: flex; gap: 10px; flex-wrap: wrap; }
+    .paleta-cor {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 3px solid transparent;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+    .paleta-cor.sel { border-color: var(--cor-texto-forte); }
+    .cor-custom-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .cor-custom-row input[type="color"] {
+        width: 46px;
+        height: 42px;
+        padding: 0;
+        border: 1px solid var(--cor-borda);
+        border-radius: 8px;
+        background: var(--cor-input);
+    }
+    .cor-custom-row input[type="text"] {
+        width: 130px;
+        font-family: Consolas, monospace;
+        text-transform: uppercase;
+    }
+    .preview-box {
+        border: 1px solid var(--cor-borda);
+        border-radius: 8px;
+        background: var(--cor-fundo);
+        padding: 18px;
+    }
+    .preview-live {
+        background: var(--preview-fundo, var(--cor-fundo));
+        border-color: var(--preview-borda, var(--cor-borda));
+        color: var(--preview-texto, var(--cor-texto));
+        transition: background .18s ease, border-color .18s ease, color .18s ease;
+    }
+    .preview-live .preview-brand strong { color: var(--preview-texto-forte, var(--cor-texto-forte)); }
+    .preview-live .preview-brand span,
+    .preview-live .legend { color: var(--preview-texto-suave, var(--cor-texto-suave)); }
+    .preview-live .preview-card {
+        background: var(--preview-card, var(--cor-card));
+        border-color: var(--preview-borda, var(--cor-borda));
+        color: var(--preview-texto-suave, var(--cor-texto-suave));
+    }
+    .preview-live .preview-button {
+        background: var(--preview-destaque, var(--cor-destaque));
+        color: var(--preview-btn-texto, var(--cor-btn-texto));
+    }
+    .preview-mini-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 38px;
+        padding: 8px 10px;
+        border-radius: 7px;
+        background: var(--preview-input, var(--cor-input));
+        border: 1px solid var(--preview-borda, var(--cor-borda));
+        color: var(--preview-texto, var(--cor-texto));
+        font-size: .84rem;
+    }
+    .preview-mini-field::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--preview-destaque, var(--cor-destaque));
+    }
+    .preview-box .legend {
+        color: var(--cor-muted);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        margin: 0 0 14px;
+    }
+    .preview-shell { display: grid; gap: 12px; }
+    .preview-brand { display: flex; align-items: center; gap: 10px; }
+    .preview-brand img { width: 42px; height: 42px; border-radius: 8px; }
+    .preview-brand strong { color: var(--cor-texto-forte); }
+    .preview-brand span { display: block; color: var(--cor-texto-suave); font-size: .78rem; }
+    .preview-button {
+        display: inline-flex;
+        width: fit-content;
+        padding: 9px 15px;
+        border-radius: 7px;
+        background: var(--cor-destaque);
+        color: var(--cor-btn-texto);
+        font-weight: 800;
+    }
+    .preview-card {
+        border-left: 4px solid var(--cor-destaque);
+        border-radius: 7px;
+        background: var(--cor-card);
+        border-top: 1px solid var(--cor-borda);
+        border-right: 1px solid var(--cor-borda);
+        border-bottom: 1px solid var(--cor-borda);
+        padding: 12px 14px;
+        color: var(--cor-texto-suave);
+    }
+    .toggle-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--cor-borda);
+    }
+    .toggle-row:last-of-type { border-bottom: 0; }
+    .toggle-row .desc { color: var(--cor-texto-forte); font-weight: 700; }
+    .toggle-row .desc small { display: block; color: var(--cor-muted); font-weight: 500; margin-top: 3px; }
+    .toggle-wrap { position: relative; display: inline-block; width: 46px; height: 26px; flex: 0 0 auto; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: var(--cor-input);
+        border: 1px solid var(--cor-borda);
+        border-radius: 999px;
+        transition: .2s;
+    }
+    .slider::before {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        background: var(--cor-texto-forte);
+        border-radius: 50%;
+        transition: .2s;
+    }
+    input:checked + .slider { background: var(--cor-destaque); border-color: var(--cor-destaque); }
+    input:checked + .slider::before { transform: translateX(20px); background: var(--cor-btn-texto); }
+    .cfg-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 22px;
+        padding: 18px 0 0;
+        background: transparent;
+        border-top: 1px solid var(--cor-borda);
+    }
+    .cfg-actions .btn-salvar { max-width: 240px; }
+    @media (max-width: 860px) {
+        .cfg-header, .cfg-grid { grid-template-columns: 1fr; }
+        .cfg-grid { display: block; }
+        .cfg-card { margin-bottom: 16px; }
+        .cfg-photo-row, .theme-options, .theme-color-grid, .notice-window-grid { grid-template-columns: 1fr; }
+        .reset-card { align-items: stretch; flex-direction: column; }
+        .cfg-actions .btn-salvar { max-width: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cfg-page">
+    <div class="cfg-header">
+        <div>
+            <h2>Configurações</h2>
+            <p>Personalize a identidade, o painel interno e a experiência pública de agendamento sem alterar regras de agenda, serviços ou pagamentos.</p>
+        </div>
+    </div>
+
+    <div class="cfg-tabs" role="tablist">
+        <button type="button" class="cfg-tab ativo" data-tab="identidade"><span class="tab-dot"></span>Identidade</button>
+        <button type="button" class="cfg-tab" data-tab="painel"><span class="tab-dot"></span>Painel</button>
+        <button type="button" class="cfg-tab" data-tab="agendamento"><span class="tab-dot"></span>Agendamento</button>
+        <button type="button" class="cfg-tab" data-tab="aviso"><span class="tab-dot"></span>Aviso</button>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="form-config">
+        {% csrf_token %}
+
+        <section id="tab-identidade" class="cfg-painel ativo">
+            <div class="cfg-grid">
+                <div class="cfg-card">
+                    <h3>Nome, slogan e foto</h3>
+                    <div class="cfg-group">
+                        <label for="inp-nome">Nome da barbearia</label>
+                        <input type="text" name="nome_barbearia" id="inp-nome" maxlength="80"
+                               value="{{ configuracao.nome_barbearia }}"
+                               placeholder="Ex: Barbearia Central">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="inp-slogan">Slogan</label>
+                        <input type="text" name="slogan" id="inp-slogan" maxlength="100"
+                               value="{{ configuracao.slogan }}"
+                               placeholder="Ex: Cortes & Estilo">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="cep">CEP</label>
+                        <input type="text" id="cep" name="cep" maxlength="9" value="{{ empresa_atual.cep }}" placeholder="00000-000">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="logradouro">Logradouro</label>
+                        <input type="text" id="logradouro" name="logradouro" maxlength="120" value="{{ empresa_atual.logradouro }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="numero">Número</label>
+                        <input type="text" id="numero" name="numero" maxlength="20" value="{{ empresa_atual.numero }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="complemento">Complemento</label>
+                        <input type="text" id="complemento" name="complemento" maxlength="120" value="{{ empresa_atual.complemento }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="bairro">Bairro</label>
+                        <input type="text" id="bairro" name="bairro" maxlength="80" value="{{ empresa_atual.bairro }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="cidade">Cidade</label>
+                        <input type="text" id="cidade" name="cidade" maxlength="80" value="{{ empresa_atual.cidade }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="uf">UF</label>
+                        <input type="text" id="uf" name="uf" maxlength="2" value="{{ empresa_atual.uf }}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="ddd">DDD</label>
+                        <input type="text" id="ddd" name="ddd" maxlength="2" value="{{ empresa_atual.ddd }}" placeholder="00">
+                        <p class="cfg-help">Usado nos placeholders de telefone desta barbearia.</p>
+                    </div>
+                    <div class="cfg-group">
+                        <label for="latitude">Latitude</label>
+                        <input type="number" step="0.000001" id="latitude" name="latitude" value="{% if empresa_atual.latitude %}{{ empresa_atual.latitude|unlocalize }}{% endif %}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="longitude">Longitude</label>
+                        <input type="number" step="0.000001" id="longitude" name="longitude" value="{% if empresa_atual.longitude %}{{ empresa_atual.longitude|unlocalize }}{% endif %}">
+                    </div>
+                    <div class="cfg-group">
+                        <label for="foto-barbearia">Foto da barbearia</label>
+                        <div class="cfg-photo-row">
+                            {% if configuracao.foto_barbearia %}
+                                <img src="{{ configuracao.foto_barbearia.url }}" alt="" class="cfg-photo-preview">
+                            {% else %}
+                                <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="" class="cfg-photo-preview">
+                            {% endif %}
+                            <div>
+                                <input type="file" id="foto-barbearia" name="foto_barbearia" accept="image/jpeg,image/png,image/webp">
+                                <p class="cfg-help">Recomendado: 1600x900 px, JPG/PNG/WEBP, até 3 MB. Use uma foto clara da fachada, recepção ou cadeira principal.</p>
+                                {% if configuracao.foto_barbearia %}
+                                    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--cor-texto-suave);font-size:.86rem;text-transform:none;letter-spacing:0;">
+                                        <input type="checkbox" name="remover_foto_barbearia">
+                                        Remover foto atual
+                                    </label>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cfg-group">
+                        <label for="logo-barbearia">Logo</label>
+                        <input type="file" id="logo-barbearia" name="logo" accept="image/jpeg,image/png,image/webp">
+                        <p class="cfg-help">JPG/PNG/WEBP, até 2 MB. Prefira PNG ou WEBP com fundo transparente.</p>
+                        {% if configuracao.logo %}
+                            <img src="{{ configuracao.logo.url }}" alt="Logo atual" class="cfg-photo-preview">
+                            <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--cor-texto-suave);font-size:.86rem;text-transform:none;letter-spacing:0;">
+                                <input type="checkbox" name="remover_logo"> Remover logo atual
+                            </label>
+                        {% endif %}
+                    </div>
+                    <div class="cfg-group">
+                        <label for="favicon-barbearia">Favicon</label>
+                        <input type="file" id="favicon-barbearia" name="favicon" accept="image/jpeg,image/png,image/webp">
+                        <p class="cfg-help">Imagem quadrada, até 1 MB.</p>
+                        {% if configuracao.favicon %}
+                            <img src="{{ configuracao.favicon.url }}" alt="Favicon atual" class="cfg-photo-preview">
+                            <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--cor-texto-suave);font-size:.86rem;text-transform:none;letter-spacing:0;">
+                                <input type="checkbox" name="remover_favicon"> Remover favicon atual
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <aside class="preview-box">
+                    <p class="legend">Preview da marca</p>
+                    <div class="preview-shell">
+                        <div class="preview-brand">
+                            {% if configuracao.logo %}
+                                <img src="{{ configuracao.logo.url }}" alt="">
+                            {% else %}
+                                <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="">
+                            {% endif %}
+                            <div>
+                                <strong id="pv-nome">{{ configuracao.nome_barbearia|default:"Barbearia" }}</strong>
+                                <span id="pv-slogan">{{ configuracao.slogan }}</span>
+                            </div>
+                        </div>
+                        <div class="preview-card">Essa identidade aparece no painel e na página de agendamento.</div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="tab-painel" class="cfg-painel">
+            <div class="cfg-grid">
+                <div class="cfg-card">
+                    <h3>Aparencia do painel</h3>
+                    <p>Define o visual inicial para barbeiros e gestores. Cada usuario ainda pode alternar claro/escuro no proprio navegador.</p>
+                    <div class="cfg-group">
+                        <label>Tema padrão</label>
+                        <div class="theme-options">
+                            <label class="theme-choice">
+                                <input type="radio" name="tema_painel_padrao" value="dark" {% if configuracao.tema_painel_padrao != 'light' %}checked{% endif %}>
+                                <span>Escuro <small>Menos brilho para uso prolongado.</small></span>
+                            </label>
+                            <label class="theme-choice">
+                                <input type="radio" name="tema_painel_padrao" value="light" {% if configuracao.tema_painel_padrao == 'light' %}checked{% endif %}>
+                                <span>Claro <small>Melhor em ambientes iluminados.</small></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="cfg-group">
+                        <label>Cor de destaque do painel</label>
+                        <div class="paleta" data-palette="panel">
+                            {% for cor in paleta_cores %}
+                                <button type="button" class="paleta-cor {% if configuracao.cor_destaque == cor.hex %}sel{% endif %}"
+                                        style="background:{{ cor.hex }};" data-cor="{{ cor.hex }}" title="{{ cor.nome }}"></button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="cfg-group">
+                        <label for="inp-hex">Cor personalizada</label>
+                        <div class="cor-custom-row">
+                            <input type="color" id="color-picker" value="{{ configuracao.cor_destaque }}">
+                            <input type="text" id="inp-hex" name="cor_destaque" maxlength="7" value="{{ configuracao.cor_destaque }}" placeholder="#ffb74d">
+                            <span id="indicador-contraste" class="cfg-help">Contraste calculado automaticamente.</span>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top:28px;">Cores do modo escuro</h3>
+                    <div class="theme-color-grid">
+                        <div class="cfg-group"><label>Fundo</label><input type="color" name="tema_escuro_fundo" value="{{ configuracao.tema_escuro_fundo }}"></div>
+                        <div class="cfg-group"><label>Sidebar</label><input type="color" name="tema_escuro_sidebar" value="{{ configuracao.tema_escuro_sidebar }}"></div>
+                        <div class="cfg-group"><label>Cards</label><input type="color" name="tema_escuro_card" value="{{ configuracao.tema_escuro_card }}"></div>
+                        <div class="cfg-group"><label>Inputs</label><input type="color" name="tema_escuro_input" value="{{ configuracao.tema_escuro_input }}"></div>
+                        <div class="cfg-group"><label>Bordas</label><input type="color" name="tema_escuro_borda" value="{{ configuracao.tema_escuro_borda }}"></div>
+                        <div class="cfg-group"><label>Texto</label><input type="color" name="tema_escuro_texto" value="{{ configuracao.tema_escuro_texto }}"></div>
+                        <div class="cfg-group"><label>Texto forte</label><input type="color" name="tema_escuro_texto_forte" value="{{ configuracao.tema_escuro_texto_forte }}"></div>
+                        <div class="cfg-group"><label>Texto suave</label><input type="color" name="tema_escuro_texto_suave" value="{{ configuracao.tema_escuro_texto_suave }}"></div>
+                    </div>
+
+                    <h3 style="margin-top:28px;">Cores do modo claro</h3>
+                    <div class="theme-color-grid">
+                        <div class="cfg-group"><label>Fundo</label><input type="color" name="tema_claro_fundo" value="{{ configuracao.tema_claro_fundo }}"></div>
+                        <div class="cfg-group"><label>Sidebar</label><input type="color" name="tema_claro_sidebar" value="{{ configuracao.tema_claro_sidebar }}"></div>
+                        <div class="cfg-group"><label>Cards</label><input type="color" name="tema_claro_card" value="{{ configuracao.tema_claro_card }}"></div>
+                        <div class="cfg-group"><label>Inputs</label><input type="color" name="tema_claro_input" value="{{ configuracao.tema_claro_input }}"></div>
+                        <div class="cfg-group"><label>Bordas</label><input type="color" name="tema_claro_borda" value="{{ configuracao.tema_claro_borda }}"></div>
+                        <div class="cfg-group"><label>Texto</label><input type="color" name="tema_claro_texto" value="{{ configuracao.tema_claro_texto }}"></div>
+                        <div class="cfg-group"><label>Texto forte</label><input type="color" name="tema_claro_texto_forte" value="{{ configuracao.tema_claro_texto_forte }}"></div>
+                        <div class="cfg-group"><label>Texto suave</label><input type="color" name="tema_claro_texto_suave" value="{{ configuracao.tema_claro_texto_suave }}"></div>
+                    </div>
+
+                    <div class="reset-card">
+                        <span class="cfg-help">Restaura apenas as cores do painel para o padrão visual do sistema.</span>
+                        <button type="submit" name="acao" value="restaurar_cores_painel" class="btn-restaurar">Restaurar painel</button>
+                    </div>
+                </div>
+
+                <aside class="preview-box preview-live" data-preview="panel">
+                    <p class="legend">Preview do painel</p>
+                    <div class="preview-shell">
+                        <div class="preview-brand">
+                            <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="">
+                            <div>
+                                <strong id="pvc-nome">{{ configuracao.nome_barbearia|default:"Barbearia" }}</strong>
+                                <span id="pvc-slogan">{{ configuracao.slogan }}</span>
+                            </div>
+                        </div>
+                        <span class="preview-button" id="pvc-btn">Exemplo</span>
+                        <div class="preview-mini-field">Campo de exemplo</div>
+                        <div class="preview-card" id="pvc-card">Cards, links ativos e botões usam essa cor no painel.</div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="tab-agendamento" class="cfg-painel">
+            <div class="cfg-grid">
+                <div class="cfg-card">
+                    <h3>Página pública de agendamento</h3>
+                    <p>Controle a aparência inicial da experiência do cliente sem interferir no painel interno.</p>
+                    <div class="cfg-group">
+                        <label for="foto-fundo-publico">Foto de fundo da página</label>
+                        <div class="cfg-photo-row">
+                            {% if configuracao.foto_fundo_publico %}
+                                <img src="{{ configuracao.foto_fundo_publico.url }}" alt="" class="cfg-photo-preview">
+                            {% else %}
+                                <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="" class="cfg-photo-preview">
+                            {% endif %}
+                            <div>
+                                <input type="file" id="foto-fundo-publico" name="foto_fundo_publico" accept="image/jpeg,image/png,image/webp">
+                                <p class="cfg-help">Aparece no background do body, atras do container de agendamento. Recomendado: 1920x1080 px, JPG/PNG/WEBP, ate 4 MB. O sistema aplica o sombreado automaticamente.</p>
+                                {% if configuracao.foto_fundo_publico %}
+                                    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--cor-texto-suave);font-size:.86rem;text-transform:none;letter-spacing:0;">
+                                        <input type="checkbox" name="remover_foto_fundo_publico">
+                                        Remover foto de fundo atual
+                                    </label>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="lista_espera_config_presente" value="1">
+                    <div class="toggle-row">
+                        <div class="desc">
+                            Exibir lista de espera aos clientes
+                            <small>Quando desativado, clientes nao veem a opcao ao esgotar os horarios.</small>
+                        </div>
+                        <label class="toggle-wrap">
+                            <input type="checkbox" name="exibir_lista_espera_publica" {% if configuracao.exibir_lista_espera_publica %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="cfg-group">
+                        <label>Tema padrão do cliente</label>
+                        <div class="theme-options">
+                            <label class="theme-choice">
+                                <input type="radio" name="tema_agendamento_padrao" value="dark" {% if configuracao.tema_agendamento_padrao != 'light' %}checked{% endif %}>
+                                <span>Escuro <small>Boa leitura e menor cansaço visual.</small></span>
+                            </label>
+                            <label class="theme-choice">
+                                <input type="radio" name="tema_agendamento_padrao" value="light" {% if configuracao.tema_agendamento_padrao == 'light' %}checked{% endif %}>
+                                <span>Claro <small>Visual limpo para ambientes claros.</small></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="cfg-group">
+                        <label>Cor de destaque do agendamento</label>
+                        <div class="paleta" data-palette="public">
+                            {% for cor in paleta_cores %}
+                                <button type="button" class="paleta-cor {% if configuracao.cor_destaque_agendamento == cor.hex %}sel{% endif %}"
+                                        style="background:{{ cor.hex }};" data-cor="{{ cor.hex }}" title="{{ cor.nome }}"></button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="cfg-group">
+                        <label for="inp-hex-public">Cor personalizada</label>
+                        <div class="cor-custom-row">
+                            <input type="color" id="color-picker-public" value="{{ configuracao.cor_destaque_agendamento }}">
+                            <input type="text" id="inp-hex-public" name="cor_destaque_agendamento" maxlength="7" value="{{ configuracao.cor_destaque_agendamento }}" placeholder="#ffb74d">
+                            <span id="indicador-contraste-public" class="cfg-help">Contraste calculado automaticamente.</span>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top:28px;">Cores do modo escuro do cliente</h3>
+                    <div class="theme-color-grid">
+                        <div class="cfg-group"><label>Fundo</label><input type="color" name="agendamento_tema_escuro_fundo" value="{{ configuracao.agendamento_tema_escuro_fundo }}"></div>
+                        <div class="cfg-group"><label>Superficie</label><input type="color" name="agendamento_tema_escuro_sidebar" value="{{ configuracao.agendamento_tema_escuro_sidebar }}"></div>
+                        <div class="cfg-group"><label>Cards</label><input type="color" name="agendamento_tema_escuro_card" value="{{ configuracao.agendamento_tema_escuro_card }}"></div>
+                        <div class="cfg-group"><label>Inputs</label><input type="color" name="agendamento_tema_escuro_input" value="{{ configuracao.agendamento_tema_escuro_input }}"></div>
+                        <div class="cfg-group"><label>Bordas</label><input type="color" name="agendamento_tema_escuro_borda" value="{{ configuracao.agendamento_tema_escuro_borda }}"></div>
+                        <div class="cfg-group"><label>Texto</label><input type="color" name="agendamento_tema_escuro_texto" value="{{ configuracao.agendamento_tema_escuro_texto }}"></div>
+                        <div class="cfg-group"><label>Texto forte</label><input type="color" name="agendamento_tema_escuro_texto_forte" value="{{ configuracao.agendamento_tema_escuro_texto_forte }}"></div>
+                        <div class="cfg-group"><label>Texto suave</label><input type="color" name="agendamento_tema_escuro_texto_suave" value="{{ configuracao.agendamento_tema_escuro_texto_suave }}"></div>
+                    </div>
+
+                    <h3 style="margin-top:28px;">Cores do modo claro do cliente</h3>
+                    <div class="theme-color-grid">
+                        <div class="cfg-group"><label>Fundo</label><input type="color" name="agendamento_tema_claro_fundo" value="{{ configuracao.agendamento_tema_claro_fundo }}"></div>
+                        <div class="cfg-group"><label>Superficie</label><input type="color" name="agendamento_tema_claro_sidebar" value="{{ configuracao.agendamento_tema_claro_sidebar }}"></div>
+                        <div class="cfg-group"><label>Cards</label><input type="color" name="agendamento_tema_claro_card" value="{{ configuracao.agendamento_tema_claro_card }}"></div>
+                        <div class="cfg-group"><label>Inputs</label><input type="color" name="agendamento_tema_claro_input" value="{{ configuracao.agendamento_tema_claro_input }}"></div>
+                        <div class="cfg-group"><label>Bordas</label><input type="color" name="agendamento_tema_claro_borda" value="{{ configuracao.agendamento_tema_claro_borda }}"></div>
+                        <div class="cfg-group"><label>Texto</label><input type="color" name="agendamento_tema_claro_texto" value="{{ configuracao.agendamento_tema_claro_texto }}"></div>
+                        <div class="cfg-group"><label>Texto forte</label><input type="color" name="agendamento_tema_claro_texto_forte" value="{{ configuracao.agendamento_tema_claro_texto_forte }}"></div>
+                        <div class="cfg-group"><label>Texto suave</label><input type="color" name="agendamento_tema_claro_texto_suave" value="{{ configuracao.agendamento_tema_claro_texto_suave }}"></div>
+                    </div>
+
+                    <div class="reset-card">
+                        <span class="cfg-help">Restaura apenas as cores da página de agendamento para o padrão do cliente.</span>
+                        <button type="submit" name="acao" value="restaurar_cores_agendamento" class="btn-restaurar">Restaurar agendamento</button>
+                    </div>
+                </div>
+
+                <aside class="preview-box preview-live" data-preview="public">
+                    <p class="legend">Preview do cliente</p>
+                    <div class="preview-shell" id="preview-publico">
+                        <div class="preview-brand">
+                            {% if configuracao.foto_barbearia %}
+                                <img src="{{ configuracao.foto_barbearia.url }}" alt="">
+                            {% else %}
+                                <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="">
+                            {% endif %}
+                            <div>
+                                <strong id="pub-nome">{{ configuracao.nome_barbearia|default:"Barbearia" }}</strong>
+                                <span id="pub-slogan">{{ configuracao.slogan }}</span>
+                            </div>
+                        </div>
+                        <span class="preview-button" id="pub-btn">Agendar horário</span>
+                        <div class="preview-mini-field">Campo de exemplo</div>
+                        <div class="preview-card" id="pub-card">O cliente pode alternar claro/escuro no dispositivo dele.</div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="tab-aviso" class="cfg-painel">
+            <div class="cfg-grid">
+                <div class="cfg-card">
+                    <h3>Aviso na tela de agendamento</h3>
+                    <p>Mensagem fixada para feriados, promoções, manutenções ou horários especiais.</p>
+                    <div class="toggle-row">
+                        <div class="desc">
+                            Exibir aviso aos clientes
+                            <small>Aparece antes do formulario de agendamento.</small>
+                        </div>
+                        <label class="toggle-wrap">
+                            <input type="checkbox" name="aviso_ativo" {% if configuracao.aviso_ativo %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="margin-top:18px;">
+                        <div class="cfg-group">
+                            <label for="aviso-titulo">Título</label>
+                            <input type="text" id="aviso-titulo" name="aviso_titulo" maxlength="100"
+                                   value="{{ configuracao.aviso_titulo }}" placeholder="Ex: Aviso Importante">
+                        </div>
+                        <div class="cfg-group">
+                            <label for="aviso-mensagem">Mensagem</label>
+                            <textarea id="aviso-mensagem" name="aviso_mensagem" rows="4" maxlength="500"
+                                      placeholder="Ex: Fechados nos dias 24 e 25/12.">{{ configuracao.aviso_mensagem }}</textarea>
+                        </div>
+                        <div class="cfg-group">
+                            <label for="aviso-imagem">Imagem do aviso</label>
+                            <div class="cfg-photo-row">
+                                {% if configuracao.aviso_imagem %}
+                                    <img src="{{ configuracao.aviso_imagem.url }}" alt="" class="cfg-photo-preview notice">
+                                {% else %}
+                                    <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="" class="cfg-photo-preview notice">
+                                {% endif %}
+                                <div>
+                                    <input type="file" id="aviso-imagem" name="aviso_imagem" accept="image/jpeg,image/png,image/webp">
+                                    <p class="cfg-help">Recomendado: 1200x675 px, JPG/PNG/WEBP, até 2 MB. Use imagem horizontal, legível em celular.</p>
+                                    {% if configuracao.aviso_imagem %}
+                                        <label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--cor-texto-suave);font-size:.86rem;text-transform:none;letter-spacing:0;">
+                                            <input type="checkbox" name="remover_aviso_imagem">
+                                            Remover imagem atual
+                                        </label>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="notice-window-grid">
+                            <div class="cfg-group">
+                                <label for="aviso-data-inicio">Exibir a partir de</label>
+                                <input type="date" id="aviso-data-inicio" name="aviso_data_inicio" value="{{ configuracao.aviso_data_inicio|date:'Y-m-d' }}">
+                            </div>
+                            <div class="cfg-group">
+                                <label for="aviso-data-fim">Exibir até</label>
+                                <input type="date" id="aviso-data-fim" name="aviso_data_fim" value="{{ configuracao.aviso_data_fim|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                        <p class="cfg-help" style="margin-top:-4px;">Deixe as datas vazias para manter o aviso ativo enquanto o interruptor estiver ligado.</p>
+                        <div class="cfg-group">
+                            <label>Tom do aviso</label>
+                            <select id="aviso-cor" name="aviso_cor" class="notice-tone tom-{{ configuracao.aviso_cor|default:'amarelo' }}">
+                                <option value="azul" style="background:#0d47a1;color:#fff;" {% if configuracao.aviso_cor == 'azul' %}selected{% endif %}>🔵 Informativo — azul</option>
+                                <option value="vermelho" style="background:#b71c1c;color:#fff;" {% if configuracao.aviso_cor == 'vermelho' %}selected{% endif %}>🔴 Urgente — vermelho</option>
+                                <option value="amarelo" style="background:#f9a825;color:#111;" {% if configuracao.aviso_cor == 'amarelo' or not configuracao.aviso_cor %}selected{% endif %}>🟡 Atenção — amarelo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="preview-box">
+                    <p class="legend">Preview do aviso</p>
+                    <div id="aviso-preview-card" class="preview-card tom-{{ configuracao.aviso_cor|default:'amarelo' }}">
+                        {% if configuracao.aviso_imagem %}
+                            <img src="{{ configuracao.aviso_imagem.url }}" alt="" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:7px;margin-bottom:12px;border:1px solid var(--cor-borda);">
+                        {% endif %}
+                        <strong>{{ configuracao.aviso_titulo|default:"Aviso Importante" }}</strong>
+                        <p style="margin:8px 0 0;">{{ configuracao.aviso_mensagem|default:"Sua mensagem aparecerá aqui." }}</p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <div class="cfg-actions">
+            <button type="submit" class="btn-salvar">Salvar configurações</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/configuracoes.js' %}"></script>
+{% endblock %}

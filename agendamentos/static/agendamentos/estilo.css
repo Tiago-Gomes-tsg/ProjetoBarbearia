@@ -1,0 +1,1036 @@
+:root {
+    --motion-fast: 120ms;
+    --motion-base: 220ms;
+    --motion-slow: 420ms;
+    --motion-ease: cubic-bezier(.2, .8, .2, 1);
+    --motion-pop: cubic-bezier(.17, .84, .44, 1);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Layout base da experiencia publica de agendamento. */
+body {
+    position: relative;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100svh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0;
+    padding: clamp(12px, 3vw, 24px);
+    box-sizing: border-box;
+    transition: background-color var(--motion-base) ease, color var(--motion-base) ease;
+}
+
+body.public-page-has-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(135deg, rgba(10,10,10,.78), rgba(10,10,10,.38)),
+        var(--public-page-bg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.public-page-has-bg::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(circle at 50% 8%, rgba(255,255,255,.08), transparent 34%),
+        color-mix(in srgb, var(--cor-fundo) 18%, transparent);
+    pointer-events: none;
+}
+
+.container-principal {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    width: 100%;
+    max-width: 450px;
+    animation: pageEnter var(--motion-slow) var(--motion-ease) both;
+}
+
+.public-hero {
+    min-height: 172px;
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
+    margin-bottom: 0;
+    padding: 18px;
+    box-sizing: border-box;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--cor-card) 92%, transparent), color-mix(in srgb, var(--cor-fundo) 72%, transparent)),
+        var(--cor-card);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+    box-shadow: 0 12px 30px var(--cor-shadow);
+    transition: border-color var(--motion-base) ease, box-shadow var(--motion-base) ease, transform var(--motion-base) var(--motion-ease);
+}
+
+.public-hero.has-photo {
+    color: #fff;
+}
+
+.public-hero-content {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+}
+
+.public-brand-mark {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    box-shadow: 0 10px 22px rgba(0,0,0,.28);
+    flex: 0 0 auto;
+    transition: transform var(--motion-base) var(--motion-pop), box-shadow var(--motion-base) ease;
+}
+
+.public-hero:hover .public-brand-mark {
+    transform: translateY(-1px) rotate(-2deg);
+}
+
+#aviso-notificacao {
+    --aviso-acento: #fbc02d;
+    --aviso-borda: #5f4b00;
+    --aviso-fundo: #211b05;
+    --aviso-titulo: #ffe082;
+    position: fixed;
+    top: 50%;
+    left: calc(50% + 255px);
+    transform: translateY(-50%);
+    width: min(340px, calc(50vw - 295px));
+    max-width: 340px;
+    background: var(--aviso-fundo) !important;
+    border: 1px solid var(--aviso-borda) !important;
+    border-left: 4px solid var(--aviso-acento) !important;
+    box-shadow: 0 12px 26px var(--cor-shadow);
+    border-radius: 10px !important;
+    margin-bottom: 0 !important;
+    overflow: hidden;
+    animation: noticeFadeIn .28s ease both;
+}
+
+#aviso-notificacao.aviso-tom-azul {
+    --aviso-acento: #42a5f5;
+    --aviso-borda: #1a5c96;
+    --aviso-fundo: #0d2235;
+    --aviso-titulo: #90caf9;
+}
+
+#aviso-notificacao.aviso-tom-vermelho {
+    --aviso-acento: #ef5350;
+    --aviso-borda: #7a2929;
+    --aviso-fundo: #2a1111;
+    --aviso-titulo: #ef9a9a;
+}
+
+#aviso-notificacao.aviso-tom-amarelo {
+    --aviso-acento: #fbc02d;
+    --aviso-borda: #6d5300;
+    --aviso-fundo: #2a2105;
+    --aviso-titulo: #ffe082;
+}
+
+#aviso-notificacao strong {
+    color: var(--aviso-titulo) !important;
+}
+
+#aviso-notificacao [role="button"]:focus {
+    outline: 2px solid var(--aviso-acento);
+    outline-offset: -2px;
+}
+
+#aviso-notificacao .aviso-seta {
+    color: var(--cor-texto-suave);
+    font-size: .92rem;
+    transition: transform var(--motion-base) var(--motion-ease);
+    transform: rotate(0deg);
+}
+
+#corpo-aviso {
+    border-top: 1px solid var(--aviso-borda) !important;
+    max-height: min(44vh, 420px);
+    overflow-y: auto;
+    transform-origin: top;
+}
+
+#corpo-aviso.aviso-corpo-aberto {
+    animation: avisoCorpoIn var(--motion-base) var(--motion-ease) both;
+}
+
+#corpo-aviso p {
+    color: var(--cor-texto) !important;
+}
+
+.aviso-imagem {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--cor-borda);
+    margin: 14px 0 2px;
+    display: block;
+}
+
+.aviso-vermelho {
+    border-left-color: #ef5350 !important;
+}
+
+.aviso-azul {
+    border-left-color: #42a5f5 !important;
+}
+
+.public-hero h1 {
+    margin: 0 0 4px;
+    color: var(--cor-destaque);
+    font-size: 1.75rem;
+    line-height: 1.05;
+}
+
+.public-hero p {
+    margin: 0;
+    color: var(--cor-texto-suave);
+    font-size: .92rem;
+}
+
+.public-hero.has-photo p {
+    color: rgba(255,255,255,.82);
+}
+
+.public-theme-toggle {
+    margin: 0;
+    align-self: flex-start;
+    background: color-mix(in srgb, var(--cor-card) 86%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+/* Estrutura compartilhada entre formulario e tela final. */
+#form-agendamento, #etapa-conclusao {
+    background-color: var(--cor-sidebar);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    border: 1px solid var(--cor-borda);
+    box-sizing: border-box;
+    animation: surfaceEnter .36s var(--motion-ease) both;
+    transition: background-color var(--motion-base) ease, border-color var(--motion-base) ease, box-shadow var(--motion-base) ease;
+}
+
+h3 {
+    color: var(--cor-destaque);
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.4rem;
+    border-bottom: 2px solid var(--cor-borda);
+    padding-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Campos usados nas etapas e no calendario gerado pelo Flatpickr. */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #b0b0b0;
+}
+
+input[type="text"], 
+input[type="tel"], 
+select,
+.flatpickr-input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    background-color: var(--cor-input);
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #fff;
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: border-color var(--motion-base) ease, box-shadow var(--motion-base) ease, transform var(--motion-fast) ease;
+    font-family: inherit;
+}
+
+input[type="text"]:focus, 
+input[type="tel"]:focus, 
+select:focus,
+.flatpickr-input:focus {
+    border-color: var(--cor-destaque);
+    box-shadow: 0 0 8px rgba(var(--cor-destaque-rgb), 0.2);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+select option {
+    background-color: var(--cor-sidebar);
+    color: #fff;
+}
+
+/* Cards selecionaveis de barbeiro e servico. */
+.opcoes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.opcao-card {
+    background-color: var(--cor-input);
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: background-color var(--motion-base) ease, border-color var(--motion-base) ease, box-shadow var(--motion-base) ease, transform var(--motion-fast) ease;
+    box-sizing: border-box;
+}
+
+.opcao-card:hover {
+    background-color: var(--cor-hover);
+    border-color: var(--cor-borda);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px var(--cor-shadow);
+}
+
+.opcao-card input[type="radio"] {
+    accent-color: var(--cor-destaque);
+    transform: scale(1.3);
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.opcao-card span {
+    font-size: 1rem;
+    color: #e0e0e0;
+    flex-grow: 1;
+}
+
+.opcao-card input[type="radio"]:checked ~ span {
+    color: var(--cor-destaque);
+    font-weight: bold;
+}
+
+.opcao-card:has(input[type="radio"]:checked) {
+    border-color: var(--cor-destaque);
+    background-color: color-mix(in srgb, var(--cor-destaque) 14%, var(--cor-input));
+    animation: choicePop var(--motion-base) var(--motion-pop);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-destaque) 16%, transparent);
+}
+
+.barbeiro-card-publico {
+    min-height: 70px;
+}
+
+.barbeiro-card-foto {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--cor-borda);
+    background: var(--cor-sidebar);
+    flex: 0 0 auto;
+    transition: border-color var(--motion-base) ease, transform var(--motion-base) var(--motion-pop);
+}
+
+.opcao-card:has(input[type="radio"]:checked) .barbeiro-card-foto {
+    border-color: var(--cor-destaque);
+    transform: scale(1.04);
+}
+
+/* Resumo exibido apos o agendamento ser confirmado. */
+.resumo-box {
+    background-color: var(--cor-input);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #3a3a3a;
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.resumo-box p {
+    margin: 12px 0;
+    font-size: 1.05rem;
+    color: #e0e0e0;
+}
+
+#etapa-conclusao {
+    text-align: center;
+    animation: surfaceEnter var(--motion-slow) var(--motion-ease) both;
+}
+
+.texto-sucesso {
+    color: #b0b0b0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.contato-whatsapp { border-color: #2f8f56; }
+
+a.btn-whatsapp,
+a.btn-whatsapp:visited,
+a.btn-whatsapp:link {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    box-sizing: border-box;
+    border-radius: 7px;
+    background: #1f9d55 !important;
+    color: #ffffff !important;
+    text-align: center;
+    text-decoration: none !important;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+a.btn-whatsapp:hover {
+    background: #178347 !important;
+    transform: translateY(-1px);
+}
+
+/* Link reinicia o fluxo mantendo aparencia de botao primario. */
+a.btn-reiniciar, 
+a.btn-reiniciar:visited, 
+a.btn-reiniciar:link {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background-color: var(--cor-destaque) !important;
+    color: var(--cor-btn-texto) !important;
+    text-decoration: none !important;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: background-color var(--motion-base) ease, filter var(--motion-base) ease, transform var(--motion-fast) ease, box-shadow var(--motion-base) ease;
+}
+
+a.btn-reiniciar:hover {
+    background-color: #ffa726 !important;
+    color: var(--cor-btn-texto) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px var(--cor-shadow);
+}
+
+a.btn-reiniciar:active {
+    transform: scale(0.98);
+}
+
+/* Botoes de navegacao entre etapas. */
+.botoes-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+button {
+    width: 100%;
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color var(--motion-base) ease, filter var(--motion-base) ease, transform var(--motion-fast) ease, box-shadow var(--motion-base) ease;
+}
+
+button[type="submit"], button.btn-avancar, button.btn-finalizar {
+    background-color: var(--cor-destaque);
+    color: var(--cor-btn-texto);
+}
+
+button[type="submit"]:hover, button.btn-avancar:hover, button.btn-finalizar:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px var(--cor-shadow);
+}
+
+button.btn-voltar {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
+button.btn-voltar:hover {
+    background-color: #4a4a4a;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Flatpickr acompanha as cores configuradas para a area publica. */
+.flatpickr-calendar {
+    background: var(--cor-sidebar) !important;
+    border: 1px solid var(--cor-borda) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+}
+.flatpickr-calendar .flatpickr-months .flatpickr-month,
+.flatpickr-calendar .flatpickr-weekday {
+    color: var(--cor-destaque) !important;
+    fill: var(--cor-destaque) !important;
+}
+.flatpickr-day {
+    color: #e0e0e0 !important;
+}
+.flatpickr-day:hover, .flatpickr-day:focus {
+    background: var(--cor-hover) !important;
+}
+.flatpickr-day.selected {
+    background: var(--cor-destaque) !important;
+    color: var(--cor-btn-texto) !important;
+}
+.flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+    color: #444444 !important;
+}
+
+.alert-erro {
+    background-color: #d32f2f;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+    border: 1px solid #b71c1c;
+    transform-origin: center;
+}
+
+.alert-erro.erro-ativo {
+    animation: shakeX .32s ease;
+}
+
+/* O JavaScript alterna esta classe para controlar as etapas do fluxo. */
+.classe-escondida {
+    display: none !important;
+}
+
+.preco-destaque {
+    color: var(--cor-destaque);
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.etapa {
+    animation: stepEnter .28s var(--motion-ease) both;
+}
+
+.etapa.etapa-entrando {
+    animation: stepEnter .28s var(--motion-ease) both;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(8px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes surfaceEnter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes stepEnter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.992);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes choicePop {
+    0% { transform: scale(.99); }
+    60% { transform: scale(1.01); }
+    100% { transform: scale(1); }
+}
+
+@keyframes noticeFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes avisoCorpoIn {
+    from {
+        opacity: 0;
+        transform: scaleY(.96);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes shakeX {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+@keyframes successPulse {
+    0% { transform: scale(.985); }
+    60% { transform: scale(1.01); }
+    100% { transform: scale(1); }
+}
+
+/* Area de cancelamento exibida dentro do mesmo fluxo publico. */
+.card-cancelamento {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--cor-input);
+    border: 1px solid #444444;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    animation: stepEnter .24s var(--motion-ease) backwards;
+    transition: transform var(--motion-base) ease, border-color var(--motion-base) ease, box-shadow var(--motion-base) ease;
+}
+
+.card-cancelamento:hover {
+    border-color: var(--cor-destaque);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px var(--cor-shadow);
+}
+
+.card-cancelamento-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    flex: 1;
+    padding-right: 12px;
+}
+
+.card-cancelamento-info .data-hora {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #ffffff;
+}
+
+.card-cancelamento-info .detalhes {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #b0b0b0;
+}
+
+.btn-cancelar-horario {
+    background-color: #c62828 !important;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto !important;
+    min-width: 90px;
+    white-space: nowrap;
+    transition: background-color var(--motion-base) ease, transform var(--motion-fast) ease, box-shadow var(--motion-base) ease;
+}
+
+.btn-cancelar-horario:hover {
+    background-color: #b71c1c !important;
+    transform: translateY(-1px);
+}
+
+.btn-cancelar-horario:active {
+    transform: scale(0.98);
+}
+
+/* Modal de confirmacao usado antes de cancelar um horario. */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: noticeFadeIn var(--motion-base) ease-in-out;
+    padding: 20px;
+    box-sizing: border-box;
+    backdrop-filter: blur(2px);
+}
+
+.modal-card {
+    background-color: var(--cor-sidebar);
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    animation: scaleUp 0.25s var(--motion-pop);
+}
+
+.modal-card h4 {
+    margin-top: 0;
+    color: var(--cor-destaque);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.modal-card p {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 25px;
+}
+
+.modal-botoes {
+    display: flex;
+    gap: 12px;
+}
+
+.modal-botoes button {
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    flex: 1;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.modal-btn-voltar {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+.modal-btn-voltar:hover {
+    background-color: #4a4a4a;
+}
+
+.modal-btn-confirmar {
+    background-color: #c62828;
+    color: #ffffff;
+}
+.modal-btn-confirmar:hover {
+    background-color: #b71c1c;
+}
+
+.modal-botoes button:active {
+    transform: scale(0.98);
+}
+
+@keyframes scaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Ajustes de tema claro e responsividade da area publica. */
+#form-agendamento,
+#etapa-conclusao,
+.modal-card,
+.resumo-box,
+.opcao-card,
+.card-cancelamento {
+    background-color: var(--cor-card);
+    border-color: var(--cor-borda);
+}
+
+h3,
+.modal-card h4 {
+    color: var(--cor-destaque);
+}
+
+label,
+.texto-sucesso,
+.card-cancelamento-info .detalhes,
+.modal-card p {
+    color: var(--cor-texto-suave);
+}
+
+input[type="text"],
+input[type="tel"],
+select,
+.flatpickr-input {
+    background-color: var(--cor-input);
+    border-color: var(--cor-borda);
+    color: var(--cor-texto-forte);
+}
+
+select option {
+    background-color: var(--cor-card);
+    color: var(--cor-texto-forte);
+}
+
+button.btn-voltar,
+.modal-btn-voltar {
+    background-color: var(--cor-input);
+    color: var(--cor-texto-forte);
+    border: 1px solid var(--cor-borda);
+}
+
+.flatpickr-calendar {
+    background: var(--cor-card) !important;
+}
+
+.flatpickr-day {
+    color: var(--cor-texto-forte) !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+    background: var(--cor-hover) !important;
+}
+
+html[data-theme="light"] .public-hero.has-photo {
+    color: #fff;
+}
+
+html[data-theme="light"] .alert-erro {
+    box-shadow: none;
+}
+
+#cupom-wrapper {
+    background: color-mix(in srgb, var(--cor-card) 84%, var(--cor-destaque) 7%) !important;
+    border-color: color-mix(in srgb, var(--cor-destaque) 48%, var(--cor-borda)) !important;
+    transition: background-color var(--motion-base) ease, border-color var(--motion-base) ease, transform var(--motion-base) var(--motion-pop);
+}
+
+#secao-cupom.cupom-visivel {
+    animation: stepEnter .26s var(--motion-ease) both;
+}
+
+#cupom-wrapper.cupom-aplicado {
+    animation: successPulse .34s var(--motion-pop);
+}
+
+#cupom-aplicado-row {
+    animation: stepEnter .2s var(--motion-ease) both;
+}
+
+#cupom-icon,
+#badge-codigo {
+    background: color-mix(in srgb, var(--cor-destaque) 18%, var(--cor-card)) !important;
+}
+
+#cupom-title,
+#badge-codigo {
+    color: var(--cor-destaque) !important;
+}
+
+#cupom-sub,
+#feedback-cupom {
+    color: var(--cor-texto-suave) !important;
+}
+
+#input-cupom {
+    background: var(--cor-input) !important;
+    border-color: var(--cor-borda) !important;
+    color: var(--cor-texto-forte) !important;
+}
+
+#cupom-input-row,
+#cupom-aplicado-row {
+    flex-wrap: wrap;
+}
+
+#cupom-input-row button {
+    min-width: 110px;
+}
+
+body.is-theme-switching #form-agendamento,
+body.is-theme-switching #etapa-conclusao,
+body.is-theme-switching .public-hero {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cor-destaque) 18%, transparent), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (max-width: 1180px) {
+    body:has(#aviso-notificacao) {
+        padding-bottom: 84px;
+    }
+
+    #aviso-notificacao {
+        position: fixed;
+        top: auto;
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        transform: none;
+        width: min(520px, calc(100vw - 24px));
+        max-width: 520px;
+        margin: 0 auto !important;
+        z-index: 900;
+    }
+
+    #corpo-aviso {
+        max-height: 46svh;
+    }
+}
+
+@media (max-width: 760px) {
+    body {
+        align-items: flex-start;
+        justify-content: center;
+        min-height: 100svh;
+        padding: 12px;
+    }
+
+    .container-principal {
+        display: flex;
+        flex-direction: column;
+        max-width: 460px;
+        gap: 12px;
+    }
+
+    .public-hero,
+    #form-agendamento,
+    #etapa-conclusao {
+        width: 100%;
+    }
+
+    .public-hero {
+        min-height: 128px;
+        gap: 12px;
+    }
+
+    #corpo-aviso {
+        max-height: 36svh;
+    }
+}
+
+@media (max-width: 520px) {
+    body { padding: 10px; }
+    .container-principal { max-width: none; }
+    .public-hero { min-height: 150px; padding: 14px; border-radius: 10px; }
+    .public-hero-content { align-items: flex-start; }
+    .public-brand-mark { width: 48px; height: 48px; border-radius: 12px; }
+    .public-hero h1 { font-size: 1.45rem; }
+    .public-hero p { font-size: .85rem; }
+    .public-theme-toggle { width: 100%; }
+    #form-agendamento, #etapa-conclusao { padding: 20px; border-radius: 10px; }
+    h3 { font-size: 1.15rem; margin-bottom: 18px; }
+    .botoes-container { flex-direction: column; }
+    button { min-height: 46px; }
+    .opcao-card { padding: 13px; gap: 12px; }
+    .opcao-card span { min-width: 0; overflow-wrap: anywhere; }
+    .card-cancelamento { flex-direction: column; align-items: stretch; gap: 12px; }
+    .btn-cancelar-horario { width: 100% !important; }
+    .modal-botoes { flex-direction: column; }
+    #cupom-input-row button { width: 100%; }
+}
+
+@media (max-width: 380px) {
+    #form-agendamento, #etapa-conclusao { padding: 16px; }
+    .public-hero-content { gap: 10px; }
+    .public-hero h1 { font-size: 1.25rem; }
+    input[type="text"],
+    input[type="tel"],
+    select,
+    .flatpickr-input {
+        font-size: .95rem;
+        padding: 11px 12px;
+    }
+}
+
+/* Defesa visual para textos longos e controles em telas estreitas. */
+input,
+textarea,
+select,
+button,
+.opcao-card,
+.modal-conteudo,
+.aviso-conteudo {
+    min-width: 0;
+    max-width: 100%;
+}
+
+p,
+span,
+strong,
+.opcao-card,
+.modal-conteudo,
+.aviso-conteudo {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+textarea {
+    resize: vertical;
+}

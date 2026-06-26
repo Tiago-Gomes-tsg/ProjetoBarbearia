@@ -1,0 +1,209 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Visão Geral - Barbearia{% endblock %}
+{% block nav_home %}ativo{% endblock %}
+
+{% block extra_head %}
+    <script src="{% static 'agendamentos/vendor/chartjs/chart.umd.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-top: 0;">Visão Geral - Hoje</h2>
+
+<div class="grid-metricas">
+    {% if is_dono %}
+    <div class="card-metrica" style="border-left: 4px solid #81c784;">
+        <h3>Caixa de Hoje</h3>
+        <p class="valor-verde">R$ {{ faturamento_dia|default:"0.00"|floatformat:2 }}</p>
+    </div>
+    {% endif %}
+
+    <div class="card-metrica" style="border-left: 4px solid var(--cor-destaque);">
+        <h3>Aguardando (Agendados)</h3>
+        <p class="valor-laranja">{{ agendamentos_hoje.count }}</p>
+    </div>
+
+    <div class="card-metrica" style="border-left: 4px solid #4CAF50;">
+        <h3>Concluídos Hoje</h3>
+        <p class="valor-branco">{{ agendamentos_concluidos.count }}</p>
+    </div>
+
+    <div class="card-metrica" style="border-left: 4px solid #ef5350;">
+        <h3>Cancelados Hoje</h3>
+        <p class="valor-vermelho">{{ agendamentos_cancelados.count }}</p>
+    </div>
+</div>
+
+{% if is_gerente %}
+<section
+    id="insight-ia"
+    class="insight-ia"
+    data-url="{% url 'api_insights_gemini' %}"
+    aria-labelledby="insight-ia-titulo"
+    aria-live="polite"
+    aria-busy="true"
+>
+    <div class="insight-ia-cabecalho">
+        <span class="insight-ia-selo" aria-hidden="true">IA</span>
+        <div>
+            <h2 id="insight-ia-titulo">Insights inteligentes do mês</h2>
+            <span>Uma leitura dos movimentos atuais da barbearia</span>
+        </div>
+    </div>
+    <div class="insight-ia-corpo" data-insight-corpo>
+        <span class="insight-ia-spinner" aria-hidden="true"></span>
+        <p data-insight-texto>Carregando insights inteligentes com IA...</p>
+    </div>
+</section>
+{% endif %}
+
+{% if is_gerente %}
+<section style="margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--cor-borda);">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <h2>Desempenho da Equipe</h2>
+
+        <form method="GET" class="filtro-mensal filtro-periodo">
+            <label>
+                <span>De</span>
+                <input type="date" name="data_inicio" value="{{ data_inicio_desempenho }}">
+            </label>
+            <label>
+                <span>Até</span>
+                <input type="date" name="data_fim" value="{{ data_fim_desempenho }}">
+            </label>
+
+            <button type="submit" class="btn-acao" style="background: #4CAF50; color: white; padding: 8px 15px;">Filtrar</button>
+            {% if is_dono %}
+            <a href="{% url 'exportar_desempenho' %}?data_inicio={{ data_inicio_desempenho }}&data_fim={{ data_fim_desempenho }}" class="btn-acao" style="background: var(--cor-destaque); color: var(--cor-btn-texto); padding: 8px 15px;">
+                <span class="svg-icon icon-download" aria-hidden="true"></span>Exportar Excel
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="card-metrica" style="margin-bottom: 20px; background: #161616;">
+        <h3>Faturamento Total (Período selecionado)</h3>
+        <span style="display:block; color:var(--cor-texto-suave); margin-bottom:8px;">{{ rotulo_periodo_desempenho }}</span>
+        <p class="valor-verde" style="font-size: 2.5rem;">R$ {{ faturamento_mes|default:"0.00"|floatformat:2 }}</p>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 300px; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid var(--cor-borda);">
+            <canvas id="graficoFaturamento"></canvas>
+        </div>
+        <div style="flex: 1; min-width: 300px; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid var(--cor-borda);">
+            <canvas id="graficoCortes"></canvas>
+        </div>
+    </div>
+
+
+</section>
+{% endif %}
+
+<section class="agenda-hoje" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--cor-borda);">
+    <h2 style="margin-top: 0; margin-bottom: 25px;">Agenda do Dia</h2>
+
+    {% if agendamentos_hoje %}
+        <div class="lista-agendamentos">
+            {% for agendamento in agendamentos_hoje %}
+                <div class="item-agenda">
+                    <div class="hora">{{ agendamento.horario }}</div>
+                    <div class="info">
+                        <strong>{{ agendamento.cliente.nome }} <span class="telefone"><span class="svg-icon icon-phone" aria-hidden="true"></span> {{ agendamento.cliente.telefone }}</span></strong>
+                        <span>{{ agendamento.corte.nome }} — R$ {{ agendamento.valor_cobrado }}</span>
+                        {% if agendamento.cliente.id in assinantes_ids %}
+                            <span style="background:#2e7d32; color:#fff; padding:2px 8px; border-radius:4px; font-size:0.75rem;">ASSINANTE</span>
+                        {% endif %}
+                        {% if is_gerente %}
+                            <span class="badge-barbeiro">Barbeiro: {{ agendamento.barbeiro.nome }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="acoes-agendamento">
+                        <form method="post" action="{% url 'alterar_status' agendamento.id 'concluido' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-acao btn-concluir" style="background-color:#2e7d32; border:none;"><span class="svg-icon icon-check" aria-hidden="true"></span> Concluir</button>
+                        </form>
+                        <form method="post" action="{% url 'alterar_status' agendamento.id 'cancelado' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-acao btn-cancelar" style="background-color:#c62828; border:none;"><span class="svg-icon icon-x" aria-hidden="true"></span> Cancelar</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="sem-agenda" style="color: #888;">Nenhum cliente aguardando na fila hoje.</p>
+    {% endif %}
+</section>
+
+{% if agendamentos_concluidos %}
+<section class="agenda-concluida" style="margin-top: 40px;">
+    <h3 style="color: #81c784; border-bottom: 2px solid var(--cor-borda); padding-bottom: 10px;">Concluídos Hoje</h3>
+    <div class="lista-agendamentos">
+        {% for agendamento in agendamentos_concluidos %}
+            <div class="item-agenda concluido" style="border-left-color: #4CAF50; opacity: 0.85; background-color: #1a1a1a;">
+                <div class="hora" style="color: #81c784;">{{ agendamento.horario }}</div>
+                <div class="info">
+                    <strong>{{ agendamento.cliente.nome }} <span class="telefone"><span class="svg-icon icon-phone" aria-hidden="true"></span> {{ agendamento.cliente.telefone }}</span></strong>
+                    <span>{{ agendamento.corte.nome }} — R$ {{ agendamento.valor_cobrado }}</span>
+                    {% if is_gerente %}
+                        <span class="badge-barbeiro">Barbeiro: {{ agendamento.barbeiro.nome }}</span>
+                    {% endif %}
+                </div>
+                <div class="acoes-agendamento">
+                    <form method="post" action="{% url 'alterar_status' agendamento.id 'agendado' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-acao btn-voltar" style="background-color:#333; color:#ccc;">Desfazer</button>
+                    </form>
+                    {% if agendamento.avaliacao %}
+                        {% if agendamento.avaliacao.respondida %}
+                            <span style="background:#1b3a1b; color:#81c784; padding:6px 10px; border-radius:4px; font-size:0.78rem; font-weight:600;">
+                                {{ agendamento.avaliacao.nota }}<span class="svg-icon icon-star" aria-hidden="true"></span> Avaliado
+                            </span>
+                        {% else %}
+                            <button onclick="copiarAvaliacao(this, '{{ request.scheme }}://{{ request.get_host }}{% url "avaliar_atendimento" agendamento.avaliacao.token %}')"
+                                style="background:#1a2a3a; color:#64b5f6; border:1px solid #1976d2; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:0.78rem; white-space:nowrap; font-weight:600; width:auto;">
+                                <span class="svg-icon icon-link" aria-hidden="true"></span> Copiar link avaliação
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if agendamentos_cancelados %}
+<section class="agenda-cancelada" style="margin-top: 40px;">
+    <h3 style="color: #ef5350; border-bottom: 2px solid var(--cor-borda); padding-bottom: 10px;">Cancelados Hoje</h3>
+    <div class="lista-agendamentos">
+        {% for agendamento in agendamentos_cancelados %}
+            <div class="item-agenda cancelado" style="border-left-color: #ef5350; opacity: 0.6; background-color: #1a1a1a;">
+                <div class="hora" style="color: #ef5350;">{{ agendamento.horario }}</div>
+                <div class="info">
+                    <strong>{{ agendamento.cliente.nome }} <span class="telefone"><span class="svg-icon icon-phone" aria-hidden="true"></span> {{ agendamento.cliente.telefone }}</span></strong>
+                    <span style="text-decoration: line-through;">{{ agendamento.corte.nome }} — R$ {{ agendamento.valor_cobrado }}</span>
+                    {% if is_gerente %}
+                        <span class="badge-barbeiro">Barbeiro: {{ agendamento.barbeiro.nome }}</span>
+                    {% endif %}
+                </div>
+                <div class="acoes-agendamento">
+                    <form method="post" action="{% url 'alterar_status' agendamento.id 'agendado' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-acao btn-voltar" style="background-color:#333; color:#ccc;">Desfazer</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{{ grafico_nomes|json_script:"grafico-nomes-data" }}
+{{ grafico_cortes|json_script:"grafico-cortes-data" }}
+{{ grafico_faturamento|json_script:"grafico-faturamento-data" }}
+<script src="{% static 'agendamentos/js/painel.js' %}"></script>
+{% endblock %}

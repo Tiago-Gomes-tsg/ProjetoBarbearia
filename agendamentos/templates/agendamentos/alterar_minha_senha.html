@@ -1,0 +1,30 @@
+{% extends 'agendamentos/base.html' %}
+
+{% block title %}Alterar minha senha{% endblock %}
+{% block nav_senha %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .senha-card { max-width: 540px; padding: 26px; border: 1px solid var(--cor-borda); border-radius: 12px; background: var(--cor-sidebar); }
+    .senha-card form { display: grid; gap: 17px; }
+    .senha-card label { display: block; margin-bottom: 6px; font-weight: 700; }
+    .senha-card input { width: 100%; padding: 11px; border: 1px solid #444; border-radius: 7px; background: var(--cor-input); color: var(--cor-texto-forte); }
+    .senha-card ul { margin: 7px 0 0; padding-left: 19px; color: var(--cor-muted); font-size: .84rem; }
+    .senha-card .errorlist { color: #ff9b9b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="senha-card">
+    <h2><span class="svg-icon icon-lock" aria-hidden="true"></span>Alterar minha senha</h2>
+    <p>Troque a senha provisória por uma senha exclusiva. O sistema nunca exibe ou registra a nova senha.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+        <div>{{ field.errors }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}{{ field.help_text|safe }}{% endif %}</div>
+        {% endfor %}
+        <button type="submit" class="btn-salvar">Salvar nova senha</button>
+    </form>
+</section>
+{% endblock %}

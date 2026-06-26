@@ -1,0 +1,86 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Serviços & Preços{% endblock %}
+{% block nav_servicos %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-inline { display: flex; gap: 15px; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid var(--cor-borda); align-items: flex-end; }
+    .form-inline div { display: flex; flex-direction: column; gap: 5px; }
+    .form-inline input, .form-inline select { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; }
+    .btn-add { background: var(--cor-destaque); color: var(--cor-btn-texto); border: none; padding: 11px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-remover { color: #ef5350; text-decoration: none; font-weight: bold; margin-left: auto;}
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Serviços & Preços</h2>
+<p>Cadastre novos cortes ou remova os existentes da barbearia.</p>
+
+<form method="post" action="{% url 'adicionar_servico' %}" class="form-inline">
+    {% csrf_token %}
+    <div><label>Nome do Corte</label><input type="text" name="nome" required placeholder="Ex: Degradê" maxlength="100"></div>
+    <div><label>Preço (R$)</label><input type="number" name="preco" step="0.01" required placeholder="50.00" min="0.01" max="9999.99"></div>
+    <div>
+        <label>Barbeiro Associado</label>
+        <select name="barbeiro" required>
+            {% for b in barbeiros %}<option value="{{ b.id }}">{{ b.nome }}</option>{% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn-add">+ Adicionar</button>
+</form>
+
+<section class="agenda-hoje">
+    <h3>Serviços Cadastrados</h3>
+    
+    {% regroup cortes by barbeiro as barbeiro_list %}
+    
+    {% for grupo in barbeiro_list %}
+        <div class="grupo-barbeiro-bloco" style="margin-bottom: 25px; background: #161616; padding: 15px; border-radius: 8px; border: 1px solid #222;">
+            
+            <h4 style="color: var(--cor-destaque); margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--cor-borda); padding-bottom: 6px;">
+                <span class="svg-icon icon-barber" aria-hidden="true"></span> Profissional: {{ grupo.grouper.nome }}
+            </h4>
+            
+            <div class="lista-agendamentos">
+                {% for corte in grupo.list %}
+                    <div class="item-agenda" style="background: var(--cor-sidebar); margin-bottom: 8px;">
+                        <div class="info">
+                            <strong>{{ corte.nome }}</strong>
+                            <span style="color: #81c784; font-weight: bold;">R$ {{ corte.preco }}</span>
+                        </div>
+                        <button onclick="abrirModal('{% url 'deletar_servico' corte.id %}')" class="btn-cancelar-form" style="margin-left: auto; max-width: 100px; padding: 8px;">
+                            Excluir
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <p class="sem-agenda">Nenhum serviço cadastrado ainda.</p>
+    {% endfor %}
+</section>
+
+<div id="modalExcluir" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <div style="font-size: 2rem; margin-bottom: 10px;"><span class="svg-icon icon-alert" aria-hidden="true"></span></div>
+        <h3>Confirmar Exclusão</h3>
+        <p style="color: #b0b0b0; font-size: 0.95rem; margin-bottom: 25px;">
+            Tem certeza que deseja apagar este serviço? Esta ação não poderá ser desfeita no sistema.
+        </p>
+        <div class="botoes-modal">
+            <form id="formConfirmarExcluir" method="post" action="#" style="flex:1;">
+                {% csrf_token %}
+                <button type="submit" class="btn-modal-excluir" style="width:100%;">Sim, Excluir</button>
+            </form>
+            <button onclick="fecharModal()" class="btn-modal-voltar">Voltar</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/servicos.js' %}"></script>
+{% endblock %}

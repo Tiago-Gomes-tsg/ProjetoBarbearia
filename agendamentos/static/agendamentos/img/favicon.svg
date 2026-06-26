@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ícone de tesoura de barbeiro">
+  <style>
+    .bg{fill:#111413}
+    .blade{fill:#e5ebe8}
+    .accent-fill{fill:#ffb74d}
+    .accent-stroke{fill:none;stroke:#ffb74d;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+    @media (prefers-color-scheme: light){
+      .bg{fill:#dfe7e3}
+      .blade{fill:#111a17}
+    }
+  </style>
+
+  <rect class="bg" width="64" height="64" rx="14"/>
+
+  <path class="blade" d="M31.2 31.1 49.9 9.5c1.5-1.7 4-2 5.8-.7 1.9 1.4 2.3 4.1.9 6L35.3 34.2Z"/>
+  <path class="blade" d="M32.8 31.1 14.1 9.5c-1.5-1.7-4-2-5.8-.7-1.9 1.4-2.3 4.1-.9 6l21.3 19.4Z"/>
+
+  <path class="accent-stroke" d="M31 33.5 23.5 42"/>
+  <path class="accent-stroke" d="M33 33.5 40.5 42"/>
+
+  <circle class="accent-stroke" cx="19.5" cy="48" r="8"/>
+  <circle class="accent-stroke" cx="44.5" cy="48" r="8"/>
+
+  <circle class="accent-fill" cx="32" cy="32" r="3.6"/>
+  <circle class="bg" cx="32" cy="32" r="1.35"/>
+</svg>

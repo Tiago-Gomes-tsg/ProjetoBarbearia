@@ -1,0 +1,315 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Gestão Financeira{% endblock %}
+{% block nav_financeira %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .flex-container { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
+    .col-form  { flex: 1; min-width: 300px; max-width: 450px; }
+    .col-tabela { flex: 2; min-width: 400px; }
+    .financeiro-box { background: var(--cor-sidebar); padding: 25px; border-radius: 8px; border: 1px solid var(--cor-borda); }
+    .form-grupo { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+    .form-grupo label { color: #b0b0b0; font-weight: 600; font-size: 0.9rem; }
+    .form-grupo input, .form-grupo select, .form-grupo textarea {
+        padding: 10px; background: var(--cor-input); border: 1px solid #444;
+        color: #fff; border-radius: 6px; font-family: inherit;
+    }
+    .form-grupo textarea { resize: vertical; min-height: 60px; }
+    .btn-comissao-pagar { background-color: #2e7d32; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; }
+    .btn-comissao-pagar:hover { background-color: #4CAF50; }
+    .badge-pago { background-color: var(--cor-input); color: #81c784; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .secao-titulo { margin-top: 40px; margin-bottom: 15px; color: var(--cor-destaque); border-bottom: 1px solid var(--cor-borda); padding-bottom: 5px; }
+
+    /* Abas principais do periodo financeiro. */
+    .AbasFiltro { display: flex; gap: 10px; margin-bottom: 0; flex-wrap: wrap; }
+    .btn-filtro { background: var(--cor-sidebar); border: 1px solid #444; color: #aaa; padding: 8px 16px; border-radius: 4px 4px 0 0; text-decoration: none; font-weight: bold; font-size: 0.9rem; border-bottom: none; }
+    .btn-filtro.ativo { background: var(--cor-destaque); color: var(--cor-btn-texto); border-color: var(--cor-destaque); }
+
+    /* Range manual e seletores de mes/ano compartilham a mesma barra. */
+    .filtro-periodo {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        background: var(--cor-sidebar); border: 1px solid #444;
+        border-radius: 0 4px 4px 4px; padding: 14px 18px; margin-bottom: 24px;
+    }
+    .filtro-periodo select, .filtro-periodo input[type="date"] {
+        padding: 7px 10px; background: var(--cor-input); border: 1px solid #444;
+        color: #fff; border-radius: 5px; font-size: 0.88rem;
+    }
+    .filtro-periodo label { color: #888; font-size: 0.82rem; white-space: nowrap; }
+    .filtro-divider { width: 1px; height: 28px; background: #444; margin: 0 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <div class="AbasFiltro">
+        <a href="?periodo=mensal"  class="btn-filtro {% if periodo_atual == 'mensal'  %}ativo{% endif %}"><span class="svg-icon icon-calendar" aria-hidden="true"></span> Mensal</a>
+        <a href="?periodo=anual"   class="btn-filtro {% if periodo_atual == 'anual'   %}ativo{% endif %}"><span class="svg-icon icon-calendar" aria-hidden="true"></span> Anual</a>
+        <a href="?periodo=tudo"    class="btn-filtro {% if periodo_atual == 'tudo'    %}ativo{% endif %}"><span class="svg-icon icon-chart" aria-hidden="true"></span> Ao Todo</a>
+    </div>
+
+    <!-- O range de datas sobrepoe mes/ano na view financeira. -->
+    <form method="GET" class="filtro-periodo">
+        <input type="hidden" name="periodo" value="{{ periodo_atual }}">
+
+        {% if periodo_atual == 'mensal' %}
+        <label>Mês:</label>
+        <select name="mes">
+            <option value="1"  {% if mes_filtro == 1  %}selected{% endif %}>Janeiro</option>
+            <option value="2"  {% if mes_filtro == 2  %}selected{% endif %}>Fevereiro</option>
+            <option value="3"  {% if mes_filtro == 3  %}selected{% endif %}>Março</option>
+            <option value="4"  {% if mes_filtro == 4  %}selected{% endif %}>Abril</option>
+            <option value="5"  {% if mes_filtro == 5  %}selected{% endif %}>Maio</option>
+            <option value="6"  {% if mes_filtro == 6  %}selected{% endif %}>Junho</option>
+            <option value="7"  {% if mes_filtro == 7  %}selected{% endif %}>Julho</option>
+            <option value="8"  {% if mes_filtro == 8  %}selected{% endif %}>Agosto</option>
+            <option value="9"  {% if mes_filtro == 9  %}selected{% endif %}>Setembro</option>
+            <option value="10" {% if mes_filtro == 10 %}selected{% endif %}>Outubro</option>
+            <option value="11" {% if mes_filtro == 11 %}selected{% endif %}>Novembro</option>
+            <option value="12" {% if mes_filtro == 12 %}selected{% endif %}>Dezembro</option>
+        </select>
+        {% endif %}
+
+        {% if periodo_atual != 'tudo' %}
+        <label>Ano:</label>
+        <select name="ano">
+            {% for a in anos_disponiveis %}
+            <option value="{{ a }}" {% if ano_filtro == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+        <div class="filtro-divider"></div>
+        {% endif %}
+
+        <label>De:</label>
+        <input type="date" name="data_inicio" value="{{ data_inicio_filtro }}"
+               title="Filtrar por intervalo de datas (sobrepõe mês/ano)">
+        <label>Até:</label>
+        <input type="date" name="data_fim" value="{{ data_fim_filtro }}">
+
+        <button type="submit" class="btn-acao" style="background:#4CAF50; color:#fff; padding:7px 16px;"><span class="svg-icon icon-search" aria-hidden="true"></span> Filtrar</button>
+        <a href="?periodo={{ periodo_atual }}" class="btn-acao btn-voltar" style="padding:7px 12px;">Limpar</a>
+
+        {% if data_inicio_filtro or data_fim_filtro %}
+        <span style="color:var(--cor-destaque); font-size:0.8rem; font-weight:600;">
+            <span class="svg-icon icon-info" aria-hidden="true"></span> Filtro por datas ativo
+        </span>
+        {% endif %}
+    </form>
+
+    <h2>Fluxo de Caixa & Finanças</h2>
+    <p>Controle as receitas, despesas e repasses da barbearia.</p>
+</header>
+
+<div class="grid-metricas">
+    <div class="card-metrica">
+        <h3>Faturamento (Entradas)</h3>
+        <p class="valor-verde">R$ {{ total_entradas|floatformat:2 }}</p>
+    </div>
+    <div class="card-metrica">
+        <h3>Despesas (Saídas)</h3>
+        <p class="valor-vermelho">R$ {{ total_saidas|floatformat:2 }}</p>
+    </div>
+    <div class="card-metrica">
+        <h3>Saldo em Caixa</h3>
+        <p class="valor-branco">R$ {{ saldo_atual|floatformat:2 }}</p>
+    </div>
+    <div class="card-metrica">
+        <h3>Comissões Pendentes</h3>
+        <p class="valor-laranja">R$ {{ comissoes_pendentes|floatformat:2 }}</p>
+    </div>
+</div>
+
+<div class="flex-container">
+    <div class="col-form">
+        <div class="financeiro-box">
+            <h3 style="color: var(--cor-destaque); margin-top:0; margin-bottom:20px;">Lançar Movimentação</h3>
+            {% if not modo_leitura %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grupo">
+                    <label>Tipo de Transação</label>
+                    <select name="tipo" id="id_tipo" onchange="filtrarCategorias()" required>
+                        <option value="ENTRADA">Entrada (Receita)</option>
+                        <option value="SAIDA">Saída (Despesa)</option>
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Categoria</label>
+                    <select name="categoria" id="id_categoria" required>
+                        <option value="SERVICO"         data-tipo="ENTRADA">Serviço de Barbearia</option>
+                        <option value="PRODUTO"         data-tipo="ENTRADA">Venda de Produto</option>
+                        <option value="OUTRAS_RECEITAS" data-tipo="ENTRADA">Outras Receitas</option>
+                        <option value="ESTOQUE"         data-tipo="SAIDA">Compra de Insumos/Produtos</option>
+                        <option value="COMISSAO"        data-tipo="SAIDA">Pagamento de Comissão</option>
+                        <option value="SALARIO"         data-tipo="SAIDA">Pagamento de Salário</option>
+                        <option value="ALUGUEL"         data-tipo="SAIDA">Aluguel e Contas estruturais</option>
+                        <option value="OUTROS"          data-tipo="SAIDA">Outras Despesas</option>
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Valor (R$)</label>
+                    <input type="number" step="0.01" name="valor" placeholder="0.00" required min="0.01" max="99999999.99">
+                </div>
+                <div class="form-grupo">
+                    <label>Barbeiro Associado (Opcional)</label>
+                    <select name="barbeiro">
+                        <option value="">Nenhum</option>
+                        {% for b in barbeiros %}
+                        <option value="{{ b.id }}">{{ b.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Descrição / Detalhes</label>
+                    <textarea name="descricao" placeholder="Ex: Pagamento de conta de internet" maxlength="500"></textarea>
+                </div>
+                <button type="submit" class="btn-salvar" style="margin-top:10px;">Registrar</button>
+            </form>
+            {% else %}
+            <p style="color:#666; font-size:0.9rem;">Você tem acesso de leitura. Apenas o Dono pode registrar lançamentos.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-tabela">
+        <div class="tabela-container scroll">
+            <table class="tabela-historico">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transacoes %}
+                    <tr>
+                        <td>{{ t.data|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if t.tipo == 'ENTRADA' %}
+                            <span style="color:#81c784; font-weight:bold;"><span class="svg-icon icon-check" aria-hidden="true"></span> Entrada</span>
+                            {% else %}
+                            <span style="color:#ef5350; font-weight:bold;"><span class="svg-icon icon-x" aria-hidden="true"></span> Saída</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.get_categoria_display }}</td>
+                        <td>{{ t.descricao|default:"-" }}</td>
+                        <td style="font-weight:bold; {% if t.tipo == 'ENTRADA' %}color:#81c784;{% else %}color:#ef5350;{% endif %}">
+                            R$ {{ t.valor }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#888; padding:20px;">Nenhuma movimentação no período selecionado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<h3 class="secao-titulo">Comissões dos Barbeiros</h3>
+<div class="tabela-container scroll">
+    <table class="tabela-historico">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Barbeiro</th>
+                <th>Valor do Serviço</th>
+                <th>Comissão Devida</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in comissoes %}
+            <tr>
+                <td>{{ c.data_gerada|date:"d/m/Y" }}</td>
+                <td><strong>{{ c.barbeiro.nome }}</strong></td>
+                <td>R$ {{ c.valor_servico }}</td>
+                <td style="color:var(--cor-destaque); font-weight:bold;">R$ {{ c.valor_comissao }}</td>
+                <td>
+                    {% if c.pago %}
+                    <span class="badge-pago">Quitado</span>
+                    {% else %}
+                    <span style="color:#ef5350; font-weight:bold;">Pendente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not c.pago %}
+                    <form method="post" action="{% url 'pagar_comissao' c.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-comissao-pagar" style="cursor:pointer;">Pagar Comissão</button>
+                    </form>
+                    {% else %}
+                    <span style="color:#666;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align:center; color:#888; padding:20px;">Nenhuma comissão processada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h3 class="secao-titulo">Salários Fixos</h3>
+<div class="tabela-container scroll">
+    <table class="tabela-historico">
+        <thead>
+            <tr>
+                <th>Profissional</th>
+                <th>Remuneração</th>
+                <th>Competência</th>
+                <th>Vencimento</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in salarios %}
+            <tr>
+                <td><strong>{{ s.barbeiro.nome }}</strong></td>
+                <td>{{ s.barbeiro.get_tipo_remuneracao_display }}</td>
+                <td>{{ s.competencia_mes|stringformat:"02d" }}/{{ s.competencia_ano }}</td>
+                <td>{{ s.data_vencimento|date:"d/m/Y" }}</td>
+                <td style="color:var(--cor-destaque); font-weight:bold;">R$ {{ s.valor_salario }}</td>
+                <td>
+                    {% if s.pago %}
+                    <span class="badge-pago">Quitado</span>
+                    {% else %}
+                    <span style="color:#ef5350; font-weight:bold;">Pendente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not s.pago %}
+                    <form method="post" action="{% url 'pagar_salario' s.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-comissao-pagar" style="cursor:pointer;">Pagar Salário</button>
+                    </form>
+                    {% else %}
+                    <span style="color:#666;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align:center; color:#888; padding:20px;">Nenhum salário fixo pendente para a competência.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/financeiro.js' %}"></script>
+{% endblock %}

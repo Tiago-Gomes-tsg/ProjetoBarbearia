@@ -1,0 +1,153 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+{% block title %}Bloqueios de Agenda{% endblock %}
+{% block nav_bloqueios %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .flex-bloqueios { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
+    .col-form { flex: 1; min-width: 280px; max-width: 380px; }
+    .col-lista { flex: 2; min-width: 380px; }
+    .bloco { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+    .form-grupo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-grupo label { color: #888; font-size: 0.85rem; font-weight: 600; }
+    .form-grupo input, .form-grupo select, .form-grupo textarea {
+        padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; font-family: inherit;
+    }
+    .card-bloqueio {
+        background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-left: 4px solid #ef5350;
+        border-radius: 8px; padding: 15px 18px; margin-bottom: 12px;
+        display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;
+    }
+    .card-bloqueio.passado { border-left-color: #444; opacity: 0.6; }
+    .periodo { color: #ef5350; font-weight: bold; font-size: 0.95rem; }
+    .periodo.passado { color: #666; }
+    .dias-count { background: var(--cor-input); padding: 3px 10px; border-radius: 4px; font-size: 0.8rem; color: #888; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Bloqueios de Agenda</h2>
+    <p>Registre férias, folgas e dias não disponíveis. Esses dias ficam bloqueados automaticamente no calendário de agendamentos.</p>
+</header>
+
+<div class="flex-bloqueios">
+    <div class="col-form">
+        {% if not modo_leitura %}
+        <div class="bloco">
+            <h3 style="color:#ef5350; margin-top:0;"><span class="svg-icon icon-alert" aria-hidden="true"></span> Adicionar Bloqueio</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="adicionar">
+                <div class="form-grupo">
+                    <label>Barbeiro</label>
+                    <select name="barbeiro_id" required>
+                        <option value="">Selecione o barbeiro</option>
+                        {% for b in barbeiros %}
+                            <option value="{{ b.id }}">{{ b.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Data de início</label>
+                    <input type="date" name="data_inicio" id="data_inicio" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Data de término</label>
+                    <input type="date" name="data_fim" id="data_fim" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Motivo</label>
+                    <input type="text" name="motivo" value="Folga" placeholder="Ex: Férias, Feriado, Evento..." maxlength="100">
+                </div>
+                <button type="submit" class="btn-salvar" style="background:#c62828;">Bloquear Período</button>
+            </form>
+        </div>
+
+        {% else %}
+        <div class="bloco">
+            <h3 style="color:#ef5350; margin-top:0;"><span class="svg-icon icon-info" aria-hidden="true"></span> Somente leitura</h3>
+            <p style="color:#888; font-size:0.9rem; line-height:1.6; margin-bottom:0;">
+                Gerentes podem acompanhar os bloqueios da agenda, mas apenas o dono pode criar ou remover periodos.
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="bloco" style="background:#1a1a1a;">
+            <h4 style="color:#888; margin-top:0;"><span class="svg-icon icon-info" aria-hidden="true"></span> Como funciona</h4>
+            <p style="color:#666; font-size:0.85rem; line-height:1.6;">
+                Ao adicionar um bloqueio, os dias selecionados ficam desabilitados no calendário de agendamentos para o barbeiro escolhido. Os clientes não conseguirão selecionar essas datas.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-lista">
+        <h3 style="color:#fff; margin-top:0;">Bloqueios Ativos / Futuros</h3>
+        {% for b in bloqueios %}
+        <div class="card-bloqueio">
+            <div>
+                <strong style="color:#fff; font-size:1rem;">{{ b.barbeiro.nome }}</strong>
+                <br>
+                <span class="periodo">
+                    {{ b.data_inicio|date:"d/m/Y" }}
+                    {% if b.data_inicio != b.data_fim %}→ {{ b.data_fim|date:"d/m/Y" }}{% endif %}
+                </span>
+                <br><span style="color:#888; font-size:0.85rem;">{{ b.motivo }}</span>
+                {% if b.agendamentos_afetados %}
+                    <div style="margin-top:10px; padding:10px; border-radius:6px; background:rgba(239,83,80,.12); border:1px solid rgba(239,83,80,.32);">
+                        <strong style="color:#ef5350; font-size:.86rem;">Agendamentos ativos neste periodo</strong>
+                        {% for ag in b.agendamentos_afetados %}
+                            <div style="color:var(--cor-texto-suave); font-size:.82rem; margin-top:5px;">
+                                {{ ag.data|date:"d/m/Y" }} {{ ag.horario }} - {{ ag.cliente.nome }} ({{ ag.cliente.telefone }}) - {{ ag.corte.nome }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                <span class="dias-count">
+                    {{ b.data_inicio|timesince:b.data_fim }}
+                </span>
+                {% if not modo_leitura %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="deletar">
+                        <input type="hidden" name="bloqueio_id" value="{{ b.id }}">
+                        <button type="submit"
+                            style="background:transparent; border:1px solid #444; color:#888; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem; width:auto;"
+                            onclick="return confirm('Remover este bloqueio?')">
+                            Remover
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center; padding:40px; color:#888; background:var(--cor-sidebar); border-radius:8px; border:1px dashed #333;">
+            <p style="font-size:1.5rem;"><span class="svg-icon icon-calendar" aria-hidden="true"></span></p>
+            <p>Nenhum bloqueio ativo ou futuro.</p>
+        </div>
+        {% endfor %}
+
+        {% if bloqueios_passados %}
+        <h3 style="color:#666; margin-top:30px; font-size:0.95rem;">Histórico recente</h3>
+        {% for b in bloqueios_passados %}
+        <div class="card-bloqueio passado">
+            <div>
+                <strong style="color:#888;">{{ b.barbeiro.nome }}</strong>
+                <span class="periodo passado" style="margin-left:10px;">
+                    {{ b.data_inicio|date:"d/m/Y" }} → {{ b.data_fim|date:"d/m/Y" }}
+                </span>
+            </div>
+            <span style="color:#555; font-size:0.8rem;">{{ b.motivo }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/bloqueios.js' %}"></script>
+{% endblock %}

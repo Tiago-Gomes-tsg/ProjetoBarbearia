@@ -1,0 +1,76 @@
+services:
+  - type: web
+    runtime: python
+    name: projeto-barbearia
+    plan: starter
+    buildCommand: bash build.sh
+    startCommand: gunicorn core.wsgi:application --config gunicorn.conf.py
+    healthCheckPath: /ready/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: DEBUG
+        value: "False"
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+      - key: SECURE_HSTS_SECONDS
+        value: "3600"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "True"
+      # Ative somente depois de validar DNS/TLS de todos os subdomínios.
+      - key: SECURE_HSTS_PRELOAD
+        value: "False"
+      - key: DB_SSL_REQUIRE
+        value: "True"
+      - key: TENANT_ALLOW_SINGLE_FALLBACK
+        value: "False"
+      - key: TERMS_VERSION
+        value: "1.0"
+      - key: PRIVACY_POLICY_VERSION
+        value: "1.0"
+      - key: QUERY_LOGGING_ENABLED
+        value: "True"
+      - key: ALERT_SLOW_REQUEST_MS
+        value: "2000"
+      - key: ALERT_CPU_PERCENT
+        value: "90"
+      - key: ALERT_MEMORY_MB
+        value: "512"
+      - key: GEMINI_INSIGHTS_CACHE_TIMEOUT
+        value: "2764800"
+      - key: GEMINI_INSIGHTS_PERIOD
+        value: "daily"
+      - key: DATA_UPLOAD_MAX_MEMORY_SIZE
+        value: "41943040"
+      - key: FILE_UPLOAD_MAX_MEMORY_SIZE
+        value: "8388608"
+      - key: TENANT_BACKUP_MAX_BYTES
+        value: "26214400"
+      - key: TENANT_BACKUP_UPLOAD_MAX_BYTES
+        value: "41943040"
+      - key: TENANT_BACKUP_MAX_RECORDS
+        value: "100000"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: TENANT_BASE_DOMAIN
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
+      - key: AWS_S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_S3_REGION_NAME
+        sync: false

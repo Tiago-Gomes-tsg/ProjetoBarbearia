@@ -1,0 +1,204 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="{{ cfg.tema_painel_padrao|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Painel - {{ empresa.nome|default:"Barbearia" }}{% endblock %}</title>
+    <script>
+        (function () {
+            try {
+                var tema = localStorage.getItem('barbearia:{{ empresa.slug|default:"global"|escapejs }}:painel-theme');
+                if (tema === 'light' || tema === 'dark') {
+                    document.documentElement.dataset.theme = tema;
+                }
+            } catch (e) {}
+        })();
+    </script>
+    {% if cfg.favicon %}
+    <link rel="icon" href="{{ cfg.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'agendamentos/img/favicon.svg' %}">
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'agendamentos/dashboard.css' %}">
+
+    {% if cfg %}
+    <style>
+        :root {
+            --cor-destaque: {{ cfg.cor_destaque }};
+            --cor-btn-texto: {{ cfg.cor_texto_botao }};
+            --theme-dark-fundo: {{ cfg.tema_escuro_fundo }};
+            --theme-dark-sidebar: {{ cfg.tema_escuro_sidebar }};
+            --theme-dark-card: {{ cfg.tema_escuro_card }};
+            --theme-dark-input: {{ cfg.tema_escuro_input }};
+            --theme-dark-borda: {{ cfg.tema_escuro_borda }};
+            --theme-dark-texto: {{ cfg.tema_escuro_texto }};
+            --theme-dark-texto-forte: {{ cfg.tema_escuro_texto_forte }};
+            --theme-dark-texto-suave: {{ cfg.tema_escuro_texto_suave }};
+            --theme-light-fundo: {{ cfg.tema_claro_fundo }};
+            --theme-light-sidebar: {{ cfg.tema_claro_sidebar }};
+            --theme-light-card: {{ cfg.tema_claro_card }};
+            --theme-light-input: {{ cfg.tema_claro_input }};
+            --theme-light-borda: {{ cfg.tema_claro_borda }};
+            --theme-light-texto: {{ cfg.tema_claro_texto }};
+            --theme-light-texto-forte: {{ cfg.tema_claro_texto_forte }};
+            --theme-light-texto-suave: {{ cfg.tema_claro_texto_suave }};
+        }
+    </style>
+    {% endif %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <input type="checkbox" id="menu-toggle" class="menu-toggle-checkbox">
+    <label for="menu-toggle" class="menu-toggle-btn">
+        <span></span><span></span><span></span>
+    </label>
+
+    <aside class="sidebar">
+        <div class="logo">
+            {% if cfg.logo %}
+            <img src="{{ cfg.logo.url }}" alt="Logo de {{ empresa.nome }}" class="brand-mark">
+            {% else %}
+            <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="" class="brand-mark">
+            {% endif %}
+            {% if cfg and cfg.nome_barbearia %}
+                {{ cfg.nome_barbearia }}
+                {% if cfg.slogan %}
+                    <br><strong class="brand-slogan">{{ cfg.slogan }}</strong>
+                {% endif %}
+            {% else %}
+                Projeto <span>Barbearia</span>
+            {% endif %}
+        </div>
+
+        <div class="usuario-logado">
+            <div class="usuario-label">Logado como</div>
+            <strong>{{ barbeiro.nome|default:user.username }}</strong>
+            <span>
+                {% if membro_empresa.is_owner or user.is_superuser %}Dono
+                {% elif membro_empresa.papel == 'MANAGER' %}Gerente
+                {% else %}Funcionário{% endif %}
+            </span>
+        </div>
+
+        <button type="button" class="theme-toggle" data-theme-toggle data-theme-key="barbearia:{{ empresa.slug|default:'global' }}:painel-theme">
+            <span class="theme-toggle-icon" aria-hidden="true"></span>
+            <span data-theme-toggle-label>Modo claro</span>
+        </button>
+
+        <nav>
+            <a href="{% url 'painel_home' %}" class="nav-topo {% block nav_home %}{% endblock %}">
+                <span class="svg-icon icon-home" aria-hidden="true"></span>Visao Geral
+            </a>
+
+            <div class="nav-grupo" id="grupo-agenda">
+                <button class="nav-grupo-header" onclick="toggleGrupo('grupo-agenda')">
+                    <span><span class="svg-icon icon-calendar" aria-hidden="true"></span>Agenda</span>
+                    <span class="svg-icon icon-chevron seta" aria-hidden="true"></span>
+                </button>
+                <div class="nav-grupo-itens">
+                    <a href="{% url 'historico' %}" class="nav-filho {% block nav_historico %}{% endblock %}">Histórico</a>
+                    {% if membro_empresa.is_manager or user.is_superuser %}
+                    <a href="{% url 'lista_bloqueios' %}" class="nav-filho {% block nav_bloqueios %}{% endblock %}">Ferias / Bloqueios</a>
+                    <a href="{% url 'lista_espera_painel' %}" class="nav-filho {% block nav_espera %}{% endblock %}">Lista de Espera</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if membro_empresa.is_manager or user.is_superuser %}
+            <div class="nav-grupo" id="grupo-equipe">
+                <button class="nav-grupo-header" onclick="toggleGrupo('grupo-equipe')">
+                    <span><span class="svg-icon icon-users" aria-hidden="true"></span>Equipe</span>
+                    <span class="svg-icon icon-chevron seta" aria-hidden="true"></span>
+                </button>
+                <div class="nav-grupo-itens">
+                    <a href="{% url 'lista_equipe' %}" class="nav-filho {% block nav_equipe %}{% endblock %}">Gerenciar Equipe</a>
+                    <a href="{% url 'metas' %}" class="nav-filho {% block nav_metas %}{% endblock %}">Metas</a>
+                    <a href="{% url 'lista_avaliacoes' %}" class="nav-filho {% block nav_avaliacoes %}{% endblock %}">Avaliações</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="nav-grupo" id="grupo-desempenho">
+                <button class="nav-grupo-header" onclick="toggleGrupo('grupo-desempenho')">
+                    <span><span class="svg-icon icon-chart" aria-hidden="true"></span>Meu Desempenho</span>
+                    <span class="svg-icon icon-chevron seta" aria-hidden="true"></span>
+                </button>
+                <div class="nav-grupo-itens">
+                    <a href="{% url 'metas' %}" class="nav-filho {% block nav_metas_funcionario %}{% endblock %}">Minhas Metas</a>
+                    <a href="{% url 'lista_avaliacoes' %}" class="nav-filho {% block nav_avaliacoes_funcionario %}{% endblock %}">Minhas Avaliações</a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if membro_empresa.is_owner or user.is_superuser %}
+            <div class="nav-grupo" id="grupo-clientes">
+                <button class="nav-grupo-header" onclick="toggleGrupo('grupo-clientes')">
+                    <span><span class="svg-icon icon-barber" aria-hidden="true"></span>Clientes</span>
+                    <span class="svg-icon icon-chevron seta" aria-hidden="true"></span>
+                </button>
+                <div class="nav-grupo-itens">
+                    <a href="{% url 'lista_servicos' %}" class="nav-filho {% block nav_servicos %}{% endblock %}">Serviços & Preços</a>
+                    <a href="{% url 'lista_planos' %}" class="nav-filho {% block nav_planos %}{% endblock %}">Planos Mensais</a>
+                    <a href="{% url 'configurar_fidelidade' %}" class="nav-filho {% block nav_fidelidade %}{% endblock %}">Fidelidade</a>
+                    <a href="{% url 'gerenciar_cupons' %}" class="nav-filho {% block nav_cupons %}{% endblock %}">Cupons</a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if membro_empresa.is_manager or user.is_superuser %}
+            <div class="nav-grupo" id="grupo-financeiro">
+                <button class="nav-grupo-header" onclick="toggleGrupo('grupo-financeiro')">
+                    <span><span class="svg-icon icon-cash" aria-hidden="true"></span>Financeiro</span>
+                    <span class="svg-icon icon-chevron seta" aria-hidden="true"></span>
+                </button>
+                <div class="nav-grupo-itens">
+                    <a href="{% url 'gestao_financeira' %}" class="nav-filho {% block nav_financeira %}{% endblock %}">Financas & Caixa</a>
+                    <a href="{% url 'gestao_estoque' %}" class="nav-filho {% block nav_estoque %}{% endblock %}">Estoque</a>
+                    {% if membro_empresa.is_owner or user.is_superuser %}
+                    <a href="{% url 'exportar_historico' %}" class="nav-filho"><span class="svg-icon icon-download" aria-hidden="true"></span>Exportar Histórico</a>
+                    <a href="{% url 'exportar_financeiro' %}" class="nav-filho"><span class="svg-icon icon-download" aria-hidden="true"></span>Exportar Financeiro</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if membro_empresa.is_owner or user.is_superuser %}
+            <a href="{% url 'configuracoes_barbearia' %}" class="nav-topo nav-topo-cfg {% block nav_config %}{% endblock %}">
+                <span class="svg-icon icon-settings" aria-hidden="true"></span>Configurações
+            </a>
+            {% endif %}
+
+            {% if not user.is_superuser %}
+            <a href="{% url 'aceitar_termos' %}" class="nav-topo">
+                <span class="svg-icon icon-privacy" aria-hidden="true"></span>Termos e privacidade
+            </a>
+            <a href="{% url 'alterar_minha_senha' %}" class="nav-topo {% block nav_senha %}{% endblock %}">
+                <span class="svg-icon icon-lock" aria-hidden="true"></span>Alterar minha senha
+            </a>
+            {% endif %}
+
+            <form action="{% url 'logout' %}" method="post" class="form-sair">
+                {% csrf_token %}
+                <button type="submit" class="btn-sair"><span class="svg-icon icon-logout" aria-hidden="true"></span>Sair do Sistema</button>
+            </form>
+        </nav>
+    </aside>
+
+    <main class="conteudo-principal">
+        {% if messages %}
+            <div class="painel-messages">
+                {% for message in messages %}
+                    <div class="alert-msg {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+        <footer class="rodape-autoral">
+            Sistema autoral desenvolvido por Tiago Gomes. Todos os direitos reservados.
+        </footer>
+    </main>
+
+    <script src="{% static 'agendamentos/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

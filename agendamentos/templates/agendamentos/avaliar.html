@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="{{ cfg.tema_agendamento_padrao|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avalie seu Atendimento - {{ empresa.nome|default:"Barbearia" }}</title>
+    {% if cfg.favicon %}
+    <link rel="icon" href="{{ cfg.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'agendamentos/img/favicon.svg' %}">
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'agendamentos/dashboard.css' %}">
+    <style>
+        :root {
+            {% if cfg %}
+            --cor-destaque: {% if cfg.cor_destaque_agendamento %}{{ cfg.cor_destaque_agendamento }}{% else %}{{ cfg.cor_destaque }}{% endif %};
+            --cor-btn-texto: {% if cfg.cor_texto_botao_agendamento %}{{ cfg.cor_texto_botao_agendamento }}{% else %}{{ cfg.cor_texto_botao }}{% endif %};
+            --theme-dark-fundo: {{ cfg.agendamento_tema_escuro_fundo }};
+            --theme-dark-sidebar: {{ cfg.agendamento_tema_escuro_sidebar }};
+            --theme-dark-card: {{ cfg.agendamento_tema_escuro_card }};
+            --theme-dark-input: {{ cfg.agendamento_tema_escuro_input }};
+            --theme-dark-borda: {{ cfg.agendamento_tema_escuro_borda }};
+            --theme-dark-texto: {{ cfg.agendamento_tema_escuro_texto }};
+            --theme-dark-texto-forte: {{ cfg.agendamento_tema_escuro_texto_forte }};
+            --theme-dark-texto-suave: {{ cfg.agendamento_tema_escuro_texto_suave }};
+            --theme-light-fundo: {{ cfg.agendamento_tema_claro_fundo }};
+            --theme-light-sidebar: {{ cfg.agendamento_tema_claro_sidebar }};
+            --theme-light-card: {{ cfg.agendamento_tema_claro_card }};
+            --theme-light-input: {{ cfg.agendamento_tema_claro_input }};
+            --theme-light-borda: {{ cfg.agendamento_tema_claro_borda }};
+            --theme-light-texto: {{ cfg.agendamento_tema_claro_texto }};
+            --theme-light-texto-forte: {{ cfg.agendamento_tema_claro_texto_forte }};
+            --theme-light-texto-suave: {{ cfg.agendamento_tema_claro_texto_suave }};
+            {% endif %}
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--cor-fundo);
+            color: var(--cor-texto-forte);
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 14px;
+            padding: 40px 36px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 8px 32px var(--cor-shadow);
+        }
+        .icone { font-size: 2.8rem; margin-bottom: 12px; color: var(--cor-destaque); }
+        .icone .svg-icon { width: 1em; height: 1em; }
+        h1 { color: var(--cor-destaque); font-size: 1.35rem; margin-bottom: 6px; }
+        .sub { color: var(--cor-texto-suave); font-size: 0.88rem; margin-bottom: 24px; }
+        .info-box {
+            background: var(--cor-input);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 22px;
+            text-align: left;
+        }
+        .info-box p { color: var(--cor-texto-suave); font-size: 0.88rem; margin: 4px 0; }
+        .info-box strong { color: var(--cor-texto-forte); }
+        .info-box .svg-icon { color: var(--cor-destaque); margin-right: 7px; vertical-align: -0.12em; }
+        .estrelas-wrap { display: flex; justify-content: center; gap: 8px; margin: 16px 0 6px; }
+        .estrelas-wrap label {
+            font-size: 2.8rem;
+            cursor: pointer;
+            color: color-mix(in srgb, var(--cor-texto-suave) 32%, var(--cor-input));
+            transition: color .15s, transform .12s;
+            user-select: none;
+        }
+        .estrelas-wrap input[type="radio"] { display: none; }
+        .estrelas-wrap label:hover,
+        .estrelas-wrap label.sel { color: var(--cor-destaque); transform: scale(1.15); }
+        #texto-nota { color: var(--cor-texto-suave); font-size: 0.85rem; min-height: 20px; margin-bottom: 16px; }
+        textarea {
+            width: 100%;
+            background: var(--cor-input);
+            border: 1px solid var(--cor-borda);
+            color: var(--cor-texto-forte);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.92rem;
+            resize: vertical;
+            margin-bottom: 18px;
+        }
+        textarea::placeholder { color: var(--cor-muted); }
+        .btn-enviar {
+            width: 100%;
+            padding: 14px;
+            background: var(--cor-destaque);
+            color: var(--cor-btn-texto);
+            font-weight: 700;
+            font-size: 0.98rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: filter .2s;
+        }
+        .btn-enviar:hover { filter: brightness(1.15); }
+        .btn-enviar:disabled {
+            background: var(--cor-input);
+            color: var(--cor-muted);
+            cursor: not-allowed;
+            filter: none;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+{% if erro %}
+    <div class="icone"><span class="svg-icon icon-x" aria-hidden="true"></span></div>
+    <h1>Link inválido</h1>
+    <p class="sub">{{ erro }}</p>
+{% elif ja_respondido %}
+    <div class="icone"><span class="svg-icon icon-check" aria-hidden="true"></span></div>
+    <h1>Já avaliado!</h1>
+    <p class="sub">Obrigado pelo seu feedback, <strong>{{ agendamento.cliente.nome }}</strong>!</p>
+{% elif sucesso %}
+    <div class="icone"><span class="svg-icon icon-star" aria-hidden="true"></span></div>
+    <h1>Avaliação enviada!</h1>
+    <p class="sub">Obrigado, <strong>{{ agendamento.cliente.nome }}</strong>!<br>Sua opinião nos ajuda a melhorar.</p>
+{% else %}
+    <div class="icone"><span class="svg-icon icon-barber" aria-hidden="true"></span></div>
+    <h1>Como foi o seu atendimento?</h1>
+    <p class="sub">Leva so 10 segundos e ajuda muito!</p>
+
+    <div class="info-box">
+        <p><span class="svg-icon icon-users" aria-hidden="true"></span><strong>{{ agendamento.cliente.nome }}</strong></p>
+        <p><span class="svg-icon icon-barber" aria-hidden="true"></span>Serviço: <strong>{{ agendamento.corte.nome }}</strong></p>
+        <p><span class="svg-icon icon-barber" aria-hidden="true"></span>Barbeiro: <strong>{{ agendamento.barbeiro.nome }}</strong></p>
+        <p><span class="svg-icon icon-calendar" aria-hidden="true"></span>Data: <strong>{{ agendamento.data|date:"d/m/Y" }}</strong></p>
+    </div>
+
+    <form method="post" id="form-aval">
+        {% csrf_token %}
+        <div class="estrelas-wrap">
+            {% for i in "12345" %}
+            <label for="nota_{{ forloop.counter }}" id="lbl_{{ forloop.counter }}"><span class="svg-icon icon-star" aria-hidden="true"></span></label>
+            <input type="radio" name="nota" id="nota_{{ forloop.counter }}" value="{{ forloop.counter }}">
+            {% endfor %}
+        </div>
+        <p id="texto-nota"></p>
+        <textarea name="comentario" rows="3" placeholder="Quer nos contar mais? (opcional)" maxlength="500"></textarea>
+        <button type="submit" class="btn-enviar" id="btn-env" disabled>Enviar Avaliação</button>
+    </form>
+{% endif %}
+</div>
+<script src="{% static 'agendamentos/js/avaliar.js' %}"></script>
+</body>
+</html>

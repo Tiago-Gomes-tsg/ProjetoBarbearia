@@ -1,0 +1,111 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Perfil do Cliente{% endblock %}
+
+{% block content %}
+<div style="background: #161616; padding: 30px; border-radius: 8px; width: 100%; max-width: 800px; border: 1px solid var(--cor-borda); margin: 0 auto;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--cor-borda); padding-bottom: 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;"><span class="svg-icon icon-users" aria-hidden="true"></span> {{ cliente.nome }}</h2>
+        <a href="javascript:history.back()" class="btn-acao btn-voltar" style="background: var(--cor-input);">Voltar ao Histórico</a>
+    </div>
+
+    <p style="color: #b0b0b0;">Celular: {{ cliente.telefone }} | Cadastrado em: {{ cliente.data_cadastro|date:"d/m/Y" }}</p>
+
+    <form method="GET" class="caixa-filtros" style="margin-top:25px;">
+        <select name="mes">
+            <option value="1"  {% if mes_busca == '1'  %}selected{% endif %}>Janeiro</option>
+            <option value="2"  {% if mes_busca == '2'  %}selected{% endif %}>Fevereiro</option>
+            <option value="3"  {% if mes_busca == '3'  %}selected{% endif %}>Março</option>
+            <option value="4"  {% if mes_busca == '4'  %}selected{% endif %}>Abril</option>
+            <option value="5"  {% if mes_busca == '5'  %}selected{% endif %}>Maio</option>
+            <option value="6"  {% if mes_busca == '6'  %}selected{% endif %}>Junho</option>
+            <option value="7"  {% if mes_busca == '7'  %}selected{% endif %}>Julho</option>
+            <option value="8"  {% if mes_busca == '8'  %}selected{% endif %}>Agosto</option>
+            <option value="9"  {% if mes_busca == '9'  %}selected{% endif %}>Setembro</option>
+            <option value="10" {% if mes_busca == '10' %}selected{% endif %}>Outubro</option>
+            <option value="11" {% if mes_busca == '11' %}selected{% endif %}>Novembro</option>
+            <option value="12" {% if mes_busca == '12' %}selected{% endif %}>Dezembro</option>
+        </select>
+
+        <select name="ano">
+            {% for ano in anos_filtro %}
+                <option value="{{ ano }}" {% if ano_busca == ano %}selected{% endif %}>{{ ano }}</option>
+            {% endfor %}
+        </select>
+
+        {% if is_gerente %}
+        <select name="barbeiro">
+            <option value="">Todos os Profissionais</option>
+            {% for b in barbeiros %}
+                <option value="{{ b.id }}" {% if barbeiro_filtro == b.id %}selected{% endif %}>{{ b.nome }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        <button type="submit" class="btn-acao" style="background:#4CAF50; color:white;"><span class="svg-icon icon-search" aria-hidden="true"></span> Filtrar</button>
+        <a href="{% url 'perfil_cliente' cliente.id %}" class="btn-acao btn-voltar" style="background:var(--cor-input);">Limpar</a>
+    </form>
+
+    <div style="display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap;">
+        <div style="flex: 1; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+            <h4 style="margin-top: 0; color: var(--cor-destaque);">Cortes no Período</h4>
+            <p style="font-size: 2rem; font-weight: bold; margin: 0;">{{ total_cortes_periodo }}</p>
+            <span style="display:block; color:#888; font-size:0.82rem; margin-top:5px;">{{ rotulo_periodo }}</span>
+        </div>
+        <div style="flex: 1; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+            <h4 style="margin-top: 0; color: #81c784;">Gasto no Período</h4>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0;">R$ {{ gasto_periodo|floatformat:2 }}</p>
+        </div>
+        <div style="flex: 1; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+            <h4 style="margin-top: 0; color: var(--cor-destaque);">Cortes Finalizados</h4>
+            <p style="font-size: 2rem; font-weight: bold; margin: 0;">{{ total_cortes }}</p>
+        </div>
+        <div style="flex: 1; background: var(--cor-sidebar); padding: 20px; border-radius: 8px; border: 1px solid #333; text-align: center;">
+            <h4 style="margin-top: 0; color: #81c784;">Valor Vitalício (LTV)</h4>
+            <p style="font-size: 1.5rem; font-weight: bold; margin: 0;">R$ {{ gasto_total|floatformat:2 }}</p>
+        </div>
+        {% if assinatura %}
+        <div style="background:#1e3a2f; border:1px solid #2e7d32; border-radius:8px;
+            padding:15px; margin-bottom:20px;">
+            <p style="margin:0; color:#81c784; font-weight:bold;">
+                <span class="svg-icon icon-check" aria-hidden="true"></span> Assinante — {{ assinatura.plano.nome }}
+            </p>
+            <p style="margin:5px 0 0; color:#b0b0b0; font-size:0.9rem;">
+                Renovação: {{ assinatura.data_renovacao|date:"d/m/Y" }} |
+                Cortes este mês: {{ assinatura.cortes_no_mes_atual }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <h3 style="margin-top: 40px;">Visitas no Período</h3>
+    <div class="tabela-container">
+        <table class="tabela-historico" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Serviço (Barbeiro)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agen in historico_pessoal %}
+                <tr>
+                    <td>{{ agen.data|date:"d/m/Y" }} às {{ agen.horario }}</td>
+                    <td>{{ agen.corte.nome }} <span style="font-size: 0.8rem; color: #888;">(com {{ agen.barbeiro.nome }})</span></td>
+                    <td>
+                        {% if agen.status == 'concluido' %}<span style="color: #4CAF50;"><span class="svg-icon icon-check" aria-hidden="true"></span> Concluído</span>
+                        {% elif agen.status == 'cancelado' %}<span style="color: #ef5350;"><span class="svg-icon icon-x" aria-hidden="true"></span> Cancelado</span>
+                        {% else %}<span style="color: var(--cor-destaque);">⏳ Agendado</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align: center;">Nenhum registro.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

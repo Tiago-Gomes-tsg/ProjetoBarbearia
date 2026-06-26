@@ -1,0 +1,169 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+{% block title %}Cupons{% endblock %}
+{% block nav_cupons %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .grid-cupons { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 20px; }
+    .col-form  { flex: 1; min-width: 280px; max-width: 360px; }
+    .col-lista { flex: 2; min-width: 380px; }
+    .card-c { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+    .form-g { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-g label { color: #888; font-size: 0.83rem; font-weight: 600; }
+    .form-g input, .form-g select { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; font-family: inherit; }
+    .cupom-card {
+        background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px;
+        padding: 16px 18px; margin-bottom: 12px;
+        display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; flex-wrap: wrap;
+    }
+    .cupom-card.invalido { opacity: 0.5; }
+    .cupom-codigo {
+        font-family: 'Courier New', monospace;
+        font-size: 1.15rem; font-weight: bold; color: var(--cor-destaque);
+        background: var(--cor-input); padding: 4px 12px; border-radius: 4px;
+        letter-spacing: 0.05em;
+    }
+    .desconto-valor { font-size: 1.4rem; font-weight: bold; color: #81c784; }
+    .badge-valido   { background:#1b5e20; color:#81c784; padding:3px 8px; border-radius:4px; font-size:0.75rem; }
+    .badge-invalido { background:#37201f; color:#ef9a9a; padding:3px 8px; border-radius:4px; font-size:0.75rem; }
+    .badge-tipo     { background:#1a2a3a; color:#64b5f6; padding:3px 8px; border-radius:4px; font-size:0.75rem; }
+    .barra-usos { height: 6px; background: var(--cor-input); border-radius: 3px; margin-top: 5px; min-width: 80px; }
+    .barra-usos-fill { height: 100%; background: #1976d2; border-radius: 3px; }
+    .acoes-cupom { display: flex; flex-direction: column; gap: 6px; min-width: 90px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Cupons de Desconto</h2>
+    <p>Crie e gerencie códigos de desconto para os seus clientes.</p>
+</header>
+
+<div class="grid-cupons">
+
+    <div class="col-form">
+        <div class="card-c">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-ticket" aria-hidden="true"></span> Criar Novo Cupom</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="criar">
+
+                <div class="form-g">
+                    <label>Código do cupom</label>
+                    <input type="text" name="codigo" placeholder="Ex: PROMO10" maxlength="20" style="text-transform:uppercase;" required>
+                </div>
+
+                <div class="form-g">
+                    <label>Tipo de desconto</label>
+                    <select name="tipo" id="tipo-desconto" onchange="atualizarPlaceholder()">
+                        <option value="PERCENTUAL">Percentual (%)</option>
+                        <option value="FIXO">Valor fixo (R$)</option>
+                    </select>
+                </div>
+
+                <div class="form-g">
+                    <label id="label-valor">Desconto (%)</label>
+                    <input type="number" step="0.01" min="0.01" max="9999.99" name="valor_desconto" id="input-valor" placeholder="Ex: 15" required>
+                </div>
+
+                <div class="form-g">
+                    <label>Válido até</label>
+                    <input type="date" name="validade" min="{{ hoje|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="form-g">
+                    <label>Usos máximos (0 = ilimitado)</label>
+                    <input type="number" name="usos_maximo" min="0" max="100000" value="1">
+                </div>
+
+                <div class="form-g">
+                    <label>Descrição (opcional)</label>
+                    <input type="text" name="descricao" placeholder="Ex: Promo de aniversário" maxlength="200">
+                </div>
+
+                <button type="submit" class="btn-salvar">Criar Cupom</button>
+            </form>
+        </div>
+
+        <div class="card-c" style="background:#1a1a1a;">
+            <h4 style="color:#888; margin-top:0;"><span class="svg-icon icon-info" aria-hidden="true"></span> Como usar</h4>
+            <p style="color:#555; font-size:0.85rem; line-height:1.6;">
+                Os clientes inserem o código na tela de agendamento. O desconto é registrado automaticamente. Cupons expirados ou esgotados são invalidados.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-lista">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:#fff; margin:0;">Cupons Cadastrados</h3>
+            <span style="color:#666; font-size:0.85rem;">{{ cupons.count }} total</span>
+        </div>
+
+        {% for c in cupons %}
+        <div class="cupom-card {% if not c.esta_valido %}invalido{% endif %}">
+            <div style="flex:1;">
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                    <span class="cupom-codigo">{{ c.codigo }}</span>
+                    <span class="badge-tipo">{{ c.get_tipo_display }}</span>
+                    {% if c.esta_valido %}
+                        <span class="badge-valido"><span class="svg-icon icon-check" aria-hidden="true"></span> Válido</span>
+                    {% else %}
+                        <span class="badge-invalido"><span class="svg-icon icon-x" aria-hidden="true"></span> Inválido</span>
+                    {% endif %}
+                </div>
+
+                <span class="desconto-valor">
+                    {% if c.tipo == 'PERCENTUAL' %}{{ c.valor_desconto }}%{% else %}R$ {{ c.valor_desconto }}{% endif %}
+                    <small style="color:#888; font-size:0.75rem; font-weight:normal;"> de desconto</small>
+                </span>
+
+                {% if c.descricao %}
+                <p style="color:#666; font-size:0.83rem; margin:6px 0 0;">{{ c.descricao }}</p>
+                {% endif %}
+
+                <div style="margin-top:8px;">
+                    <div style="display:flex; justify-content:space-between; color:#666; font-size:0.8rem;">
+                        <span>Usos: {{ c.usos_realizados }}/{% if c.usos_maximo == 0 %}∞{% else %}{{ c.usos_maximo }}{% endif %}</span>
+                        <span>Válido até: {{ c.validade|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if c.usos_maximo > 0 %}
+                    <div class="barra-usos">
+                        <div class="barra-usos-fill" style="width: {% widthratio c.usos_realizados c.usos_maximo 100 %}%; max-width:100%;"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="acoes-cupom">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="toggle_ativo">
+                    <input type="hidden" name="cupom_id" value="{{ c.id }}">
+                    <button type="submit" style="background:{% if c.ativo %}#1b5e20{% else %}#333{% endif %}; color:{% if c.ativo %}#81c784{% else %}#888{% endif %}; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem; width:100%;">
+                        {% if c.ativo %}Ativo{% else %}Inativo{% endif %}
+                    </button>
+                </form>
+                <form method="post" onsubmit="return confirm('Deletar este cupom permanentemente?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="deletar">
+                    <input type="hidden" name="cupom_id" value="{{ c.id }}">
+                    <button type="submit" style="background:transparent; color:#ef5350; border:1px solid #ef5350; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem; width:100%;">
+                        Deletar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center; padding:50px; color:#666; background:var(--cor-sidebar); border-radius:8px; border:1px dashed #333;">
+            <p style="font-size:1.5rem;"><span class="svg-icon icon-ticket" aria-hidden="true"></span></p>
+            <p>Nenhum cupom criado ainda.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/cupons.js' %}"></script>
+{% endblock %}

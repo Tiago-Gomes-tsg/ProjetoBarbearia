@@ -1,0 +1,189 @@
+{% extends 'agendamentos/base.html' %}
+{% block title %}Fidelidade{% endblock %}
+{% block nav_fidelidade %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .grid-fidelidade { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 20px; }
+    .col-config { flex: 1; min-width: 280px; max-width: 360px; }
+    .col-dados  { flex: 2; min-width: 380px; }
+    .card-f { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+    .form-g { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-g label { color: #888; font-size: 0.83rem; font-weight: 600; }
+    .form-g input, .form-g select { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--cor-borda); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { color: #e0e0e0; font-size: 0.95rem; }
+    .toggle-label small { display: block; color: #666; font-size: 0.8rem; margin-top: 2px; }
+    .badge-pts { background: #1b3a5e; color: #64b5f6; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+    .badge-pts.zero { background: var(--cor-borda); color: #555; }
+    .saldo-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; }
+    .saldo-row:last-child { border-bottom: none; }
+    .barra-pts { height: 5px; background: var(--cor-input); border-radius: 3px; margin-top: 4px; }
+    .barra-pts-fill { height: 100%; background: #1976d2; border-radius: 3px; }
+    .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1a1a1a; font-size: 0.85rem; }
+    .tx-row:last-child { border-bottom: none; }
+    .pts-positivo { color: #81c784; font-weight: bold; }
+    .pts-negativo { color: #ef5350; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Programa de Fidelidade</h2>
+    <p>Configure o sistema de pontos e gerencie o saldo dos seus clientes.</p>
+</header>
+
+<div class="grid-fidelidade">
+
+    <div class="col-config">
+
+        <div class="card-f">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-settings" aria-hidden="true"></span> Configurações</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="salvar_config">
+
+                <div class="toggle-row">
+                    <div class="toggle-label">
+                        Programa ativo
+                        <small>Clientes acumulam pontos em cada corte</small>
+                    </div>
+                    <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+                        <input type="checkbox" name="ativo" {% if config.ativo %}checked{% endif %}
+                               style="opacity:0; width:0; height:0;" onchange="this.closest('form').submit()">
+                        <span style="
+                            position:absolute; top:0; left:0; right:0; bottom:0;
+                            background: {% if config.ativo %}#2e7d32{% else %}#333{% endif %};
+                            border-radius:24px; transition:0.3s;
+                        "></span>
+                        <span style="
+                            position:absolute; height:18px; width:18px; left:3px; bottom:3px;
+                            background:#fff; border-radius:50%; transition:0.3s;
+                            transform: translateX({% if config.ativo %}20px{% else %}0{% endif %});
+                        "></span>
+                    </label>
+                </div>
+
+                <div class="form-g" style="margin-top:16px;">
+                    <label>Pontos por corte concluído</label>
+                        <input type="number" name="pontos_por_corte" min="1" max="1000000" value="{{ config.pontos_por_corte }}">
+                </div>
+                <div class="form-g">
+                    <label>Pontos necessários para resgatar</label>
+                    <input type="number" name="pontos_para_resgate" min="1" max="1000000" value="{{ config.pontos_para_resgate }}">
+                </div>
+                <div class="form-g">
+                    <label>Desconto em R$ por resgate</label>
+                    <input type="number" step="0.01" name="desconto_reais_resgate" min="0.01" max="9999.99" value="{{ config.desconto_reais_resgate }}">
+                </div>
+
+                {% if config.ativo %}
+                <div style="background:#1b3a1b; border:1px solid #2e7d32; border-radius:6px; padding:12px; margin-bottom:14px; font-size:0.85rem; color:#a5d6a7;">
+                    A cada <strong>{{ config.pontos_por_corte }} pt(s)</strong> por corte, ao acumular
+                    <strong>{{ config.pontos_para_resgate }} pontos</strong>, o cliente ganha
+                    <strong>R$ {{ config.desconto_reais_resgate }}</strong> de desconto.
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn-salvar">Salvar Configurações</button>
+            </form>
+        </div>
+
+        <div class="card-f">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-edit" aria-hidden="true"></span> Ajuste Manual</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="ajuste_manual">
+                <div class="form-g">
+                    <label>Cliente</label>
+                    <select name="cliente_id" required>
+                        <option value="">Selecione</option>
+                        {% for c in todos_clientes %}
+                            <option value="{{ c.id }}">{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-g">
+                    <label>Pontos (use negativo para remover)</label>
+                    <input type="number" name="pontos" min="-1000000" max="1000000" placeholder="+10 ou -5">
+                </div>
+                <div class="form-g">
+                    <label>Motivo</label>
+                    <input type="text" name="motivo" value="Ajuste manual" placeholder="Motivo do ajuste" maxlength="200">
+                </div>
+                <button type="submit" class="btn-salvar" style="background:#1565c0;">Aplicar Ajuste</button>
+            </form>
+        </div>
+
+        <div class="card-f">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-gift" aria-hidden="true"></span> Resgatar Pontos</h3>
+            <p style="color:#888; font-size:0.85rem;">Remove {{ config.pontos_para_resgate }} pontos do cliente e aplica R$ {{ config.desconto_reais_resgate }} de desconto no próximo serviço.</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="resgatar">
+                <div class="form-g">
+                    <label>Cliente</label>
+                    <select name="cliente_id" required>
+                        <option value="">Selecione</option>
+                        {% for s in clientes_saldo %}
+                            {% if s.pontos >= config.pontos_para_resgate %}
+                            <option value="{{ s.cliente.id }}">{{ s.cliente.nome }} ({{ s.pontos }} pts)</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-salvar" style="background:#2e7d32;">Resgatar Desconto</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-dados">
+
+        <div class="card-f">
+            <h3 style="color:#fff; margin-top:0;">Saldo dos Clientes</h3>
+            {% for s in clientes_saldo %}
+            <div class="saldo-row">
+                <div style="flex:1;">
+                    <strong style="color:#fff;">{{ s.cliente.nome }}</strong>
+                    <div class="barra-pts">
+                        <div class="barra-pts-fill" style="width: {% if config.pontos_para_resgate > 0 %}{% widthratio s.pontos config.pontos_para_resgate 100 %}{% else %}0{% endif %}%; max-width:100%;"></div>
+                    </div>
+                </div>
+                <div style="margin-left:15px; text-align:right;">
+                    <span class="badge-pts {% if s.pontos == 0 %}zero{% endif %}">
+                        {{ s.pontos }} pts
+                    </span>
+                    {% if s.pontos >= config.pontos_para_resgate %}
+                    <br><small style="color:#81c784; font-size:0.75rem;"><span class="svg-icon icon-check" aria-hidden="true"></span> Pronto p/ resgatar</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p style="color:#666; text-align:center; padding:20px;">Nenhum cliente com pontos ainda.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card-f">
+            <h3 style="color:#fff; margin-top:0;">Últimas Transações</h3>
+            {% for tx in transacoes %}
+            <div class="tx-row">
+                <div>
+                    <strong style="color:#e0e0e0;">{{ tx.cliente.nome }}</strong>
+                    <br><span style="color:#666;">{{ tx.descricao }}</span>
+                </div>
+                <div style="text-align:right;">
+                    <span class="{% if tx.pontos > 0 %}pts-positivo{% else %}pts-negativo{% endif %}">
+                        {% if tx.pontos > 0 %}+{% endif %}{{ tx.pontos }} pts
+                    </span>
+                    <br><small style="color:#555;">{{ tx.data|date:"d/m/Y H:i" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color:#666; text-align:center; padding:20px;">Nenhuma transação registrada.</p>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="{{ cfg.tema_agendamento_padrao|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>{% if cfg %}{{ cfg.nome_barbearia }}{% else %}Barbearia{% endif %} - Agendamento</title>
+    
+    <script>
+        (function () {
+            try {
+                var tema = localStorage.getItem('barbearia:{{ empresa.slug|default:"global"|escapejs }}:agendamento-theme');
+                if (tema === 'light' || tema === 'dark') {
+                    document.documentElement.dataset.theme = tema;
+                }
+            } catch (e) {}
+        })();
+    </script>
+    {% if cfg.favicon %}
+    <link rel="icon" href="{{ cfg.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'agendamentos/img/favicon.svg' %}">
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'agendamentos/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'agendamentos/estilo.css' %}">
+    <link rel="stylesheet" href="{% static 'agendamentos/vendor/flatpickr/flatpickr.min.css' %}">
+    <script src="{% static 'agendamentos/vendor/flatpickr/flatpickr.min.js' %}"></script>
+    <script src="{% static 'agendamentos/vendor/flatpickr/pt.js' %}"></script>
+    {% if cfg %}
+    <style>
+        :root {
+            --cor-destaque:  {% if cfg.cor_destaque_agendamento %}{{ cfg.cor_destaque_agendamento }}{% else %}{{ cfg.cor_destaque }}{% endif %};
+            --cor-btn-texto: {% if cfg.cor_texto_botao_agendamento %}{{ cfg.cor_texto_botao_agendamento }}{% else %}{{ cfg.cor_texto_botao }}{% endif %};
+            --theme-dark-fundo: {{ cfg.agendamento_tema_escuro_fundo }};
+            --theme-dark-sidebar: {{ cfg.agendamento_tema_escuro_sidebar }};
+            --theme-dark-card: {{ cfg.agendamento_tema_escuro_card }};
+            --theme-dark-input: {{ cfg.agendamento_tema_escuro_input }};
+            --theme-dark-borda: {{ cfg.agendamento_tema_escuro_borda }};
+            --theme-dark-texto: {{ cfg.agendamento_tema_escuro_texto }};
+            --theme-dark-texto-forte: {{ cfg.agendamento_tema_escuro_texto_forte }};
+            --theme-dark-texto-suave: {{ cfg.agendamento_tema_escuro_texto_suave }};
+            --theme-light-fundo: {{ cfg.agendamento_tema_claro_fundo }};
+            --theme-light-sidebar: {{ cfg.agendamento_tema_claro_sidebar }};
+            --theme-light-card: {{ cfg.agendamento_tema_claro_card }};
+            --theme-light-input: {{ cfg.agendamento_tema_claro_input }};
+            --theme-light-borda: {{ cfg.agendamento_tema_claro_borda }};
+            --theme-light-texto: {{ cfg.agendamento_tema_claro_texto }};
+            --theme-light-texto-forte: {{ cfg.agendamento_tema_claro_texto_forte }};
+            --theme-light-texto-suave: {{ cfg.agendamento_tema_claro_texto_suave }};
+        }
+    </style>
+    {% endif %}
+</head>
+<body class="{% if cfg and cfg.foto_fundo_publico %}public-page-has-bg{% endif %}" {% if cfg and cfg.foto_fundo_publico %}style="--public-page-bg: url('{{ cfg.foto_fundo_publico.url }}');"{% endif %}>
+
+    <div class="container-principal">
+        <header class="public-hero {% if cfg and cfg.foto_barbearia %}has-photo{% endif %}" {% if cfg and cfg.foto_barbearia %}style="background-image: linear-gradient(135deg, rgba(10,10,10,.78), rgba(10,10,10,.38)), url('{{ cfg.foto_barbearia.url }}');"{% endif %}>
+            <div class="public-hero-content">
+                {% if cfg.logo %}
+                <img src="{{ cfg.logo.url }}" alt="Logo de {{ empresa.nome }}" class="public-brand-mark">
+                {% else %}
+                <img src="{% static 'agendamentos/img/barber-mark.svg' %}" alt="" class="public-brand-mark">
+                {% endif %}
+                <div>
+                    <h1>
+                        {% if cfg and cfg.nome_barbearia %}
+                            {{ cfg.nome_barbearia }}
+                        {% else %}
+                            Barbearia
+                        {% endif %}
+                    </h1>
+                    {% if cfg and cfg.slogan %}
+                        <p>{{ cfg.slogan }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <button type="button" class="theme-toggle public-theme-toggle" data-public-theme-toggle data-theme-key="barbearia:{{ empresa.slug|default:'global' }}:agendamento-theme">
+                <span class="theme-toggle-icon" aria-hidden="true"></span>
+                <span data-public-theme-label>Modo claro</span>
+            </button>
+        </header>
+        <div style="display:none;
+            text-align: center;
+            padding: 28px 0 18px;
+            border-bottom: 1px solid var(--cor-borda, #2a2a2a);
+            margin-bottom: 24px;
+        ">
+            <h1 style="
+                font-size: 1.9rem;
+                font-weight: 700;
+                color: var(--cor-destaque, #ffb74d);
+                letter-spacing: 0.04em;
+                margin: 0 0 4px;
+            ">
+                {% if cfg and cfg.nome_barbearia %}
+                    {{ cfg.nome_barbearia }}
+                {% else %}
+                    Barbearia
+                {% endif %}
+            </h1>
+            {% if cfg and cfg.slogan %}
+            <p style="
+                margin: 0;
+                color: #888;
+                font-size: 0.9rem;
+                letter-spacing: 0.02em;
+            ">{{ cfg.slogan }}</p>
+            {% endif %}
+        </div>
+        {% if aviso_publico %}
+        <!-- Aviso publico aparece somente quando a configuracao esta ativa e dentro da janela de datas. -->
+        <div id="aviso-notificacao" class="aviso-tom-{{ aviso_publico.aviso_cor|default:'amarelo' }}">
+            
+            <div style="
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 12px 16px; cursor: pointer;"
+                onclick="toggleAvisoIndex()" role="button" aria-expanded="false" tabindex="0">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.1rem; flex-shrink:0;">
+                        <span class="svg-icon {% if aviso_publico.aviso_cor == 'vermelho' %}icon-alert{% elif aviso_publico.aviso_cor == 'azul' %}icon-info{% else %}icon-info{% endif %}" aria-hidden="true"></span>
+                    </span>
+                    <strong style="font-size: 0.95rem;">
+                        {{ aviso_publico.aviso_titulo }}
+                    </strong>
+                </div>
+                <span id="seta-aviso" class="svg-icon icon-chevron aviso-seta" aria-hidden="true"></span>
+            </div>
+            
+            <div id="corpo-aviso" style="display:none; padding: 0 16px 14px;">
+                {% if aviso_publico.aviso_imagem %}
+                    <img src="{{ aviso_publico.aviso_imagem.url }}" alt="" class="aviso-imagem">
+                {% endif %}
+                <p style="
+                    margin: 12px 0 0;
+                    color: #c8c8c8;
+                    font-size: 0.88rem;
+                    line-height: 1.6;
+                    white-space: pre-line;">{{ aviso_publico.aviso_mensagem }}</p>
+            </div>
+        </div>
+
+        {% endif %}
+
+        {% if sucesso %}
+            <div class="etapa" id="etapa-conclusao">
+                <h3>Agendamento Concluído!</h3>
+                <p class="texto-sucesso">
+                    Tudo certo, <strong>{{ dados_agendamento.nome }}</strong>! Seu horário foi reservado.
+                </p>
+                <div class="resumo-box">
+                    <p><strong>Barbeiro:</strong> {{ dados_agendamento.barbeiro }}</p>
+                    <p><strong>Data:</strong> {{ dados_agendamento.data|slice:"8:10" }}/{{ dados_agendamento.data|slice:"5:7" }}/{{ dados_agendamento.data|slice:"0:4" }}</p>
+                    <p><strong>Horário:</strong> {{ dados_agendamento.horario }}</p>
+                    <p><strong>Serviço:</strong> {{ dados_agendamento.corte }} — R$ {{ dados_agendamento.preco_final }}</p>
+                    {% if dados_agendamento.cupom %}
+                    <p style="color:#81c784;"><span class="svg-icon icon-ticket" aria-hidden="true"></span> Cupom: {{ dados_agendamento.cupom }}</p>
+                    {% endif %}
+                </div>
+                {% if dados_agendamento.whatsapp %}
+                <div class="resumo-box contato-whatsapp">
+                    <p><strong>Confirme diretamente pelo WhatsApp:</strong></p>
+                    <p>
+                        Contato: {{ dados_agendamento.whatsapp.nome }} — {{ dados_agendamento.whatsapp.telefone }}
+                        {% if dados_agendamento.whatsapp.usa_contato_dono %}<br><small>Este profissional não informou telefone; a mensagem será enviada ao proprietário da barbearia.</small>{% endif %}
+                    </p>
+                    <a href="{{ dados_agendamento.whatsapp.url }}" class="btn-whatsapp" target="_blank" rel="noopener noreferrer">Enviar confirmação pelo WhatsApp</a>
+                </div>
+                {% else %}
+                <div class="resumo-box">
+                    <p>Se perder o link de cancelamento, entre em contato diretamente com a barbearia.</p>
+                </div>
+                {% endif %}
+                <div class="resumo-box">
+                    <p><strong>Guarde seu link seguro para desmarcar:</strong></p>
+                    <a href="{% url 'cancelar_por_token' dados_agendamento.token_cancelamento %}" class="btn-voltar">Abrir link de cancelamento</a>
+                    <p style="margin-top:10px;color:var(--cor-texto-suave);font-size:.82rem;">Por privacidade, agendamentos não são pesquisados apenas pelo telefone.</p>
+                </div>
+                <div class="botoes-container">
+                    <a href="{% url 'index' %}" class="btn-reiniciar">Voltar ao Início</a>
+                </div>
+            </div>
+        {% else %}
+            
+            <form id="form-agendamento" action="{% url 'index' %}" method="POST">
+                {% csrf_token %} 
+
+                <div class="alert-erro classe-escondida" id="banner-erro"></div>
+
+                <div class="etapa" id="etapa-1">
+                    <h3>Passo 1: Quem é você?</h3>
+                    
+                    <label for="nome">Nome Completo:</label>
+                    <input type="text" id="nome" name="nome" placeholder="Ex: João Silva" maxlength="100">
+                    
+                    <label for="telefone">Telefone / WhatsApp:</label>
+                    <input type="tel" id="telefone" name="telefone" placeholder="{{ telefone_placeholder }}" maxlength="15" oninput="mascaraTelefone(this)">
+                    
+                    <div class="botoes-container" style="flex-direction: column; gap: 10px;">
+                        <button type="button" class="btn-avancar" onclick="proximaEtapa(2)">Avançar para Agendamento</button>
+                        <button type="button" class="btn-voltar" style="background-color: #c62828;" onclick="abrirTelaCancelamento()">Desmarcar um Horário</button>
+                    </div>
+                </div>
+
+                <div class="etapa classe-escondida" id="etapa-cancelamento">
+                    <h3>Desmarcar Agendamento</h3>
+                    <p style="font-size: 0.9rem; color: #b0b0b0; margin-bottom: 15px;">Use o link seguro exibido quando o agendamento foi concluído. Caso não o tenha mais, entre em contato diretamente com a barbearia.</p>
+
+                    <div class="botoes-container" style="margin-top: 20px;">
+                        <button type="button" class="btn-voltar" onclick="voltarParaEtapa1()">Voltar</button>
+                    </div>
+                </div>
+
+                <div class="etapa classe-escondida" id="etapa-2">
+                    <h3>Passo 2: Escolha seu Barbeiro</h3>
+                    <div class="opcoes-container">
+                        {% for barbeiro in barbeiros %}
+                            <label class="opcao-card barbeiro-card-publico">
+                                <input type="radio" name="barbeiro" value="{{ barbeiro.id }}" onchange="atualizarDependenciasBarbeiro()">
+                                {% if barbeiro.foto_perfil %}
+                                    <img src="{{ barbeiro.foto_perfil.url }}" alt="" class="barbeiro-card-foto">
+                                {% else %}
+                                    <img src="{% static 'agendamentos/img/avatar-placeholder.svg' %}" alt="" class="barbeiro-card-foto">
+                                {% endif %}
+                                <span>{{ barbeiro.nome }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="botoes-container">
+                        <button type="button" class="btn-voltar" onclick="proximaEtapa(1)">Voltar</button>
+                        <button type="button" class="btn-avancar" onclick="proximaEtapa(3)">Avançar</button>
+                    </div>
+                </div>
+
+                <div class="etapa classe-escondida" id="etapa-3">
+                    <h3>Passo 3: Quando você quer vir?</h3>
+                    <label for="data">Escolha a Data:</label>
+                    <input type="text" id="data" name="data" placeholder="Selecione o dia primeiro" maxlength="10" readonly>
+                    
+                    <label for="horario">Escolha o Horário:</label>
+                    <select id="horario" name="horario" disabled>
+                        <option value="" disabled selected>Selecione um barbeiro e a data primeiro</option>
+                    </select>
+                    {% if lista_espera_publica_ativa %}
+                    <div id="box-lista-espera" class="classe-escondida" style="margin-top:12px; padding:12px; border:1px solid var(--cor-borda); border-radius:8px; background:var(--cor-card);">
+                        <p id="feedback-lista-espera" style="margin:0 0 10px; color:var(--cor-texto-suave); font-size:.9rem;">
+                            Nenhum horário livre para este dia. Entre na lista de espera para receber contato se surgir uma vaga.
+                        </p>
+                        <button type="button" class="btn-avancar" style="width:100%;" onclick="entrarListaEspera()">
+                            Entrar na lista de espera
+                        </button>
+                    </div>
+                    {% endif %}
+                    <div class="botoes-container">
+                        <button type="button" class="btn-voltar" onclick="proximaEtapa(2)">Voltar</button>
+                        <button type="button" class="btn-avancar" onclick="proximaEtapa(4)">Avançar</button>
+                    </div>
+                </div>
+
+                <div class="etapa classe-escondida" id="etapa-4">
+                    <h3>Passo 4: Escolha o Serviço</h3>
+                    <div class="opcoes-container" id="container-cortes">
+                        {% for corte in cortes %}
+                            <label class="opcao-card card-corte" data-barbeiro-id="{{ corte.barbeiro_id }}">
+                                <input type="radio" name="corte" value="{{ corte.id }}">
+                                <span>{{ corte.nome }} — <strong class="preco-destaque">R$ {{ corte.preco }}</strong></span>
+                            </label>
+                        {% endfor %}
+                    </div>
+<!-- Cupom fica oculto ate o barbeiro selecionado permitir cupons publicos. -->
+<div id="secao-cupom" style="display:none; margin: 20px 0 10px;">
+
+    <div id="cupom-wrapper" style="
+        border: 1.5px dashed #3a3010;
+        border-radius: 10px;
+        padding: 16px;
+        background: #1a1800;
+        transition: border-color .2s, background .2s;
+    ">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <div id="cupom-icon" style="
+                width:28px; height:28px; background:#3a3010;
+                border-radius:6px; display:flex; align-items:center;
+                justify-content:center; font-size:14px; flex-shrink:0;
+            "><span id="cupom-icon-symbol" class="svg-icon icon-ticket" aria-hidden="true"></span></div>
+            <div>
+                <div id="cupom-title" style="font-size:0.82rem; font-weight:600; color:#c8a04a; line-height:1.2;">Cupom de desconto</div>
+                <div id="cupom-sub" style="font-size:0.73rem; color:#555; margin-top:1px;">opcional — insira o código e valide</div>
+            </div>
+        </div>
+
+        <div id="cupom-input-row" style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="input-cupom"
+                   maxlength="20"
+                   placeholder="Ex: PROMO10"
+                   autocomplete="off"
+                   style="
+                       flex:1; padding:10px 13px;
+                       background:#111000; border:1px solid #2e2800;
+                       color:#fff; border-radius:7px;
+                       font-family:'Courier New', monospace;
+                       font-size:0.93rem; font-weight:600;
+                       letter-spacing:.12em; text-transform:uppercase;
+                       outline:none; transition: border-color .2s;
+                   "
+                   onfocus="this.style.borderColor='var(--cor-destaque)'"
+                   onblur="this.style.borderColor='#2e2800'">
+            <button type="button" onclick="validarCupom()"
+                    style="
+                        padding:10px 16px; background:var(--cor-destaque);
+                        border:none; color:#1a1000;
+                        border-radius:7px; cursor:pointer;
+                        font-size:0.82rem; font-weight:700;
+                        white-space:nowrap; font-family:inherit;
+                        letter-spacing:.03em;
+                        transition: background .15s, transform .1s;
+                    "
+                    onmouseover="this.style.background='#ffa726'"
+                    onmouseout="this.style.background='var(--cor-destaque)'"
+                    onmousedown="this.style.transform='scale(.97)'"
+                    onmouseup="this.style.transform='scale(1)'">
+                Validar
+            </button>
+        </div>
+
+        <div id="cupom-aplicado-row" style="display:none; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span id="badge-codigo" style="
+                    background:#2a2000; border:1px solid #4a3800;
+                    color:var(--cor-destaque); font-family:'Courier New', monospace;
+                    font-size:0.88rem; font-weight:700; letter-spacing:.1em;
+                    padding:6px 12px; border-radius:6px;
+                "></span>
+                <span id="badge-desconto" style="
+                    background:#1b3a1e; color:#81c784;
+                    font-size:0.78rem; font-weight:600;
+                    padding:4px 10px; border-radius:20px;
+                "></span>
+            </div>
+            <button type="button" onclick="removerCupom()"
+                    style="
+                        background:transparent; border:1px solid #444;
+                        color:#666; padding:5px 10px; border-radius:6px;
+                        font-size:0.75rem; cursor:pointer; font-family:inherit;
+                        white-space:nowrap; transition: color .15s, border-color .15s;
+                    "
+                    onmouseover="this.style.color='#ef5350';this.style.borderColor='#ef5350'"
+                    onmouseout="this.style.color='#666';this.style.borderColor='#444'">
+                Remover
+            </button>
+        </div>
+
+        <div id="feedback-cupom" style="min-height:0; margin-top:0; font-size:0.8rem; transition: margin-top .15s;"></div>
+    </div>
+
+    <input type="hidden" id="cupom-codigo" name="cupom_codigo" value="">
+    <input type="hidden" id="cupom-tipo"   name="cupom_tipo"   value="">
+    <input type="hidden" id="cupom-valor"  name="cupom_valor"  value="">
+</div>
+                    <div class="botoes-container">
+                        <button type="button" class="btn-voltar" onclick="proximaEtapa(3)">Voltar</button>
+                        <button type="button" class="btn-finalizar" onclick="validarEEnviar()">Finalizar Agendamento</button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+
+        <section class="mapa-barbearia" style="margin-top:24px; padding:16px; border:1px solid var(--cor-borda); border-radius:8px; background:var(--cor-card);">
+            <h3 style="margin-top:0;">Endereço da Barbearia</h3>
+            {% if endereco_barbearia %}
+                <p style="color:var(--cor-texto-suave); margin-bottom:12px;">{{ endereco_barbearia }}</p>
+                {% if mapa_latitude and mapa_longitude %}
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+                    <div id="mapa-barbearia" style="height:260px; border-radius:8px; overflow:hidden; border:1px solid var(--cor-borda);"></div>
+                    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                    <script>
+                        window.addEventListener('load', function () {
+                            if (!window.L) return;
+                            const lat = Number('{{ mapa_latitude }}'.replace(',', '.'));
+                            const lng = Number('{{ mapa_longitude }}'.replace(',', '.'));
+                            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                            const mapa = L.map('mapa-barbearia', { scrollWheelZoom: false }).setView([lat, lng], 16);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 19,
+                                attribution: '&copy; OpenStreetMap'
+                            }).addTo(mapa);
+                            L.marker([lat, lng]).addTo(mapa);
+                        });
+                    </script>
+                {% endif %}
+            {% else %}
+                <p style="color:var(--cor-texto-suave);">Endereço ainda não cadastrado.</p>
+            {% endif %}
+        </section>
+
+    </div>
+
+    {{ horarios_ocupados|json_script:"horarios-ocupados-data" }}
+    {{ barbeiros_config|json_script:"barbeiros-config-data" }}
+    <div id="agendamento-js-config"
+         data-validar-cupom-url="{% url 'validar_cupom' %}"
+         data-lista-espera-url="{% url 'entrar_lista_espera' %}"
+         data-lista-espera-ativa="{% if lista_espera_publica_ativa %}1{% else %}0{% endif %}"
+         data-erro-validacao="{{ erro_validacao|default_if_none:'' }}"></div>
+    <script src="{% static 'agendamentos/js/index.js' %}"></script>
+</body>
+</html>

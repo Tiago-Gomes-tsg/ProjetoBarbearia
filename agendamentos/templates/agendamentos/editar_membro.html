@@ -1,0 +1,185 @@
+{% extends 'agendamentos/base.html' %}
+{% load static l10n %}
+
+{% block title %}Editar Membro{% endblock %}
+{% block nav_equipe %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .edit-box { background: var(--cor-sidebar); padding: 30px; border-radius: 8px; border: 1px solid var(--cor-borda); max-width: 520px; display: flex; flex-direction: column; gap: 20px; }
+    .edit-box div { display: flex; flex-direction: column; gap: 5px; }
+    .edit-box input[type="text"],
+    .edit-box input[type="email"],
+    .edit-box input[type="tel"],
+    .edit-box input[type="password"],
+    .edit-box input[type="time"],
+    .edit-box input[type="number"] { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; }
+    .pausa-box { border: 1px solid #444; border-radius: 8px; padding: 15px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .pausa-box legend { color: #888; font-size: 0.82rem; padding: 0 6px; }
+    .pausa-row { display: flex; gap: 16px; }
+    .pausa-row > div { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .foto-editor { display: grid !important; grid-template-columns: 84px 1fr; gap: 14px !important; align-items: center; }
+    .foto-editor img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cor-borda); background: var(--cor-input); }
+    .foto-editor input[type="file"] { padding: 10px; background: var(--cor-input); border: 1px solid #444; color: #fff; border-radius: 6px; }
+    .foto-editor small { color: var(--cor-muted); line-height: 1.35; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Editar Perfil: {{ membro.nome }}</h2>
+
+<form method="post" class="edit-box" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="foto-editor">
+        {% if membro.foto_perfil %}
+            <img src="{{ membro.foto_perfil.url }}" alt="">
+        {% else %}
+            <img src="{% static 'agendamentos/img/avatar-placeholder.svg' %}" alt="">
+        {% endif %}
+        <div>
+            <label>Foto do Profissional</label>
+            <input type="file" name="foto_perfil" accept="image/jpeg,image/png,image/webp">
+            <small>Opcional. O sistema otimiza para 300x300 px, JPG/PNG/WEBP, ate 2 MB.</small>
+            {% if membro.foto_perfil %}
+                <label style="display:flex;flex-direction:row;gap:8px;align-items:center;margin-top:8px;color:#888;font-size:.84rem;">
+                    <input type="checkbox" name="remover_foto_perfil">
+                    Remover foto atual
+                </label>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <label>Nome do Profissional</label>
+        <input type="text" name="nome" value="{{ membro.nome }}" required maxlength="100">
+    </div>
+
+    <div>
+        <label>E-mail Cadastral</label>
+        <input type="email" name="email" value="{{ membro.usuario.email }}" maxlength="254" placeholder="profissional@email.com">
+    </div>
+
+    <div>
+        <label>Telefone / WhatsApp</label>
+        <input type="tel" name="telefone" value="{{ membro.telefone }}" maxlength="20" placeholder="{{ telefone_placeholder }}" data-phone-mask inputmode="tel" {% if membro.is_dono %}required{% endif %}>
+        <small>Obrigatório para o proprietário. Funcionários podem deixar em branco e usar o contato do dono como fallback.</small>
+    </div>
+
+    <div>
+        <label>Nova Senha</label>
+        <input type="password" name="nova_senha" maxlength="128" autocomplete="new-password" placeholder="Deixe em branco para manter">
+    </div>
+
+    <div>
+        <label>Confirmar Nova Senha</label>
+        <input type="password" name="nova_senha_confirmacao" maxlength="128" autocomplete="new-password" placeholder="Repita a nova senha">
+    </div>
+
+    <div>
+        <label>Hora de Início</label>
+        <input type="time" name="hora_inicio" value="{{ membro.hora_inicio|time:'H:i' }}" required>
+    </div>
+
+    <div>
+        <label>Hora de Término</label>
+        <input type="time" name="hora_fim" value="{{ membro.hora_fim|time:'H:i' }}" required>
+    </div>
+
+    <div>
+        <label>Intervalo entre Cortes (minutos)</label>
+        <input type="number" name="intervalo_minutos" value="{{ membro.intervalo_minutos }}" min="5" max="480" required>
+    </div>
+
+    <fieldset class="pausa-box">
+        <legend><span class="svg-icon icon-calendar" aria-hidden="true"></span> Pausa / Almoço (opcional)</legend>
+        <p style="color:#888; font-size:0.82rem; margin:0 0 4px;">
+            Deixe em branco se o profissional não tiver pausa fixa. Os horários dentro deste intervalo serão bloqueados automaticamente na agenda do cliente.
+        </p>
+        <div class="pausa-row">
+            <div>
+                <label>Início da pausa</label>
+                <input type="time" name="pausa_inicio"
+                       value="{% if membro.pausa_inicio %}{{ membro.pausa_inicio|time:'H:i' }}{% endif %}">
+            </div>
+            <div>
+                <label>Fim da pausa</label>
+                <input type="time" name="pausa_fim"
+                       value="{% if membro.pausa_fim %}{{ membro.pausa_fim|time:'H:i' }}{% endif %}">
+            </div>
+        </div>
+    </fieldset>
+    <div>
+        <label>Dias de Trabalho</label>
+        <div class="dias-semana">
+            <label class="dia-btn"><input type="checkbox" name="t_domingo" {% if membro.trabalha_domingo %}checked{% endif %}><span>Dom</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_segunda" {% if membro.trabalha_segunda %}checked{% endif %}><span>Seg</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_terca"   {% if membro.trabalha_terca   %}checked{% endif %}><span>Ter</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_quarta"  {% if membro.trabalha_quarta  %}checked{% endif %}><span>Qua</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_quinta"  {% if membro.trabalha_quinta  %}checked{% endif %}><span>Qui</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_sexta"   {% if membro.trabalha_sexta   %}checked{% endif %}><span>Sex</span></label>
+            <label class="dia-btn"><input type="checkbox" name="t_sabado"  {% if membro.trabalha_sabado  %}checked{% endif %}><span>Sáb</span></label>
+        </div>
+    </div>
+
+    <div>
+        <label>Forma de Pagamento</label>
+        <select name="tipo_remuneracao" style="padding:10px; background:var(--cor-input); color:white; border:1px solid #444; border-radius:6px;">
+            <option value="COMISSAO" {% if membro.tipo_remuneracao == 'COMISSAO' %}selected{% endif %}>Apenas Comissão</option>
+            <option value="FIXO"     {% if membro.tipo_remuneracao == 'FIXO'     %}selected{% endif %}>Salário Fixo Mensal</option>
+            <option value="AMBOS"    {% if membro.tipo_remuneracao == 'AMBOS'    %}selected{% endif %}>Fixo + Comissão</option>
+        </select>
+    </div>
+
+    <div>
+        <label>Salário Fixo (R$)</label>
+        <input type="number" step="0.01" name="salario_fixo" value="{{ membro.salario_fixo|unlocalize }}" min="0" max="999999.99">
+    </div>
+
+    <div>
+        <label>Porcentagem Comissão (%)</label>
+        <input type="number" step="0.01" name="porcentagem_comissao" value="{{ membro.porcentagem_comissao|unlocalize }}" min="0" max="100">
+    </div>
+
+    <div>
+        <label>Dia do Pagamento</label>
+        <input type="number" name="dia_pagamento_salario" value="{{ membro.dia_pagamento_salario|default:'' }}" min="1" max="28">
+        <small>Obrigatorio para salario fixo ou fixo + comissao.</small>
+    </div>
+
+    <div style="margin-top:15px; margin-bottom:15px;">
+        <label class="toggle-switch">
+            <input type="checkbox" name="receber_confirmacao_whatsapp" {% if membro.receber_confirmacao_whatsapp %}checked{% endif %}>
+            Receber confirmacao de agendamento por WhatsApp
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="aceita_agendamentos_online" {% if membro.aceita_agendamentos_online %}checked{% endif %}>
+            Disponível para seleção no agendamento público
+        </label>
+        <label class="toggle-switch">
+            <input type="checkbox" name="exibir_cupons_publico" {% if membro.exibir_cupons_publico %}checked{% endif %}>
+            Exibir campo de cupom para clientes que escolherem este barbeiro
+        </label>
+    </div>
+
+    <div style="margin-top:15px; margin-bottom:15px;">
+        {% if barbeiro.id == membro.id %}
+            <p style="color:#ef5350; font-size:0.9rem; font-weight:bold;"><span class="svg-icon icon-alert" aria-hidden="true"></span> Você não pode remover sua própria permissão de Administrador.</p>
+        {% else %}
+            <label class="toggle-switch">
+                <input type="checkbox" name="is_gerente" {% if membro.is_gerente %}checked{% endif %}>
+                Dar permissão de Gerente (acesso expandido)
+            </label>
+            <label class="toggle-switch">
+                <input type="checkbox" name="is_dono" {% if membro.is_dono %}checked{% endif %}>
+                Dar permissão de Dono (acesso total)
+            </label>
+        {% endif %}
+    </div>
+
+    <div class="acoes-formulario">
+        <button type="submit" class="btn-salvar">Salvar Alterações</button>
+        <a href="{% url 'lista_equipe' %}" class="btn-cancelar-form">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

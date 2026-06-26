@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="{{ cfg.tema_agendamento_padrao|default:'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelar agendamento - {{ empresa.nome }}</title>
+    {% if cfg.favicon %}<link rel="icon" href="{{ cfg.favicon.url }}">{% endif %}
+    <link rel="stylesheet" href="{% static 'agendamentos/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'agendamentos/estilo.css' %}">
+    <style>
+        :root { --cor-destaque: {{ cfg.cor_destaque_agendamento|default:'#ffb74d' }}; }
+        body { min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--cor-fundo);color:var(--cor-texto); }
+        .cancel-card { width:min(480px,100%);background:var(--cor-card);border:1px solid var(--cor-borda);border-radius:14px;padding:32px; }
+        .cancel-card h1 { color:var(--cor-destaque);font-size:1.4rem; }
+        .cancel-info { background:var(--cor-input);border-radius:8px;padding:16px;margin:20px 0;line-height:1.7; }
+        .cancel-actions { display:flex;gap:10px;flex-wrap:wrap; }
+        .cancel-actions form,.cancel-actions a { flex:1; }
+        .cancel-actions button,.cancel-actions a { display:block;width:100%;box-sizing:border-box;padding:12px;border-radius:7px;text-align:center;font-weight:700;text-decoration:none;cursor:pointer; }
+        .confirmar { border:0;background:#c62828;color:#fff; }
+        .voltar { background:var(--cor-input);color:var(--cor-texto);border:1px solid var(--cor-borda); }
+    </style>
+</head>
+<body>
+<main class="cancel-card">
+    {% if sucesso %}
+        <h1>Agendamento desmarcado</h1>
+        <p>O horário foi liberado com segurança.</p>
+    {% elif agendamento.status != 'agendado' %}
+        <h1>Agendamento indisponível</h1>
+        <p>Este atendimento já foi concluído ou cancelado.</p>
+    {% else %}
+        <h1>Confirmar cancelamento</h1>
+        {% if erro %}<p>{{ erro }}</p>{% endif %}
+        <div class="cancel-info">
+            <strong>{{ agendamento.corte.nome }}</strong><br>
+            {{ agendamento.barbeiro.nome }}<br>
+            {{ agendamento.data|date:"d/m/Y" }} às {{ agendamento.horario }}
+        </div>
+        <div class="cancel-actions">
+            <form method="post">{% csrf_token %}<button class="confirmar" type="submit">Desmarcar</button></form>
+            <a class="voltar" href="{% url 'index' %}">Voltar</a>
+        </div>
+    {% endif %}
+</main>
+</body>
+</html>

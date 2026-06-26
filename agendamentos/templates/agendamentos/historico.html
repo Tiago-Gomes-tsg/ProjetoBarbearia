@@ -1,0 +1,108 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Histórico - Barbearia{% endblock %}
+{% block nav_historico %}ativo{% endblock %}
+
+{% block content %}
+<h2>Histórico de Agendamentos</h2>
+<p>Acompanhe todos os cortes, altere status e filtre resultados.</p>
+
+<form method="GET" class="caixa-filtros">
+    <input type="text" name="busca" placeholder="Nome do cliente ou celular..." value="{{ busca }}" maxlength="100">
+
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <label style="color:#888; font-size:0.85rem; white-space:nowrap;">De:</label>
+        <input type="date" name="data_inicio" value="{{ data_inicio_filtro }}" style="flex:1; min-width:130px;">
+        <label style="color:#888; font-size:0.85rem; white-space:nowrap;">Até:</label>
+        <input type="date" name="data_fim" value="{{ data_fim_filtro }}" style="flex:1; min-width:130px;">
+    </div>
+
+    <select name="status">
+        <option value="">Todos os Status</option>
+        <option value="agendado"  {% if status_filtro == 'agendado'  %}selected{% endif %}>Agendado</option>
+        <option value="concluido" {% if status_filtro == 'concluido' %}selected{% endif %}>Concluído</option>
+        <option value="cancelado" {% if status_filtro == 'cancelado' %}selected{% endif %}>Cancelado</option>
+    </select>
+
+    {% if is_gerente %}
+    <select name="barbeiro">
+        <option value="">Todos os Profissionais</option>
+        {% for b in barbeiros %}
+            <option value="{{ b.id }}" {% if barbeiro_filtro == b.id %}selected{% endif %}>{{ b.nome }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
+    <button type="submit" class="btn-acao" style="background:#4CAF50; color:white;"><span class="svg-icon icon-search" aria-hidden="true"></span> Filtrar</button>
+    <a href="{% url 'historico' %}" class="btn-acao btn-voltar" style="background:var(--cor-input);">Limpar</a>
+</form>
+
+<div class="tabela-container">
+    <table class="tabela-historico">
+        <thead>
+            <tr>
+                <th>Data e Hora</th>
+                <th>Cliente (Celular)</th>
+                <th>Serviço (Profissional)</th>
+                <th>Valor</th>
+                <th>Status Atual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for agendamento in page_obj %}
+                <tr onclick="window.location='{% url 'perfil_cliente' agendamento.cliente.id %}'" style="cursor:pointer; transition:background 0.2s;">
+                    <td>
+                        <strong>{{ agendamento.data|date:"d/m/Y" }}</strong><br>
+                        <span style="color:#b0b0b0;">{{ agendamento.horario }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ agendamento.cliente.nome }}</strong>
+                        {% if agendamento.nome_reserva %}
+                            <span style="color:var(--cor-destaque); font-size:0.85rem;">(Para: {{ agendamento.nome_reserva }})</span>
+                        {% endif %}
+                        <br><span style="color:#b0b0b0;">{{ agendamento.cliente.telefone }}</span>
+                    </td>
+                    <td>
+                        {{ agendamento.corte.nome }}<br>
+                        <span class="badge-barbeiro" style="margin-top:5px;">{{ agendamento.barbeiro.nome }}</span>
+                    </td>
+                    <td style="color:#81c784; font-weight:bold;">R$ {{ agendamento.valor_cobrado }}</td>
+                    <td onclick="event.stopPropagation();">
+                        <form action="{% url 'mudar_status_historico' agendamento.id %}" method="POST" style="display:flex; gap:10px;">
+                            {% csrf_token %}
+                            <select name="novo_status" class="select-status status-{{ agendamento.status }}" onchange="this.form.submit()">
+                                <option value="agendado"  {% if agendamento.status == 'agendado'  %}selected{% endif %}>Agendado</option>
+                                <option value="concluido" {% if agendamento.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                                <option value="cancelado" {% if agendamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:30px; color:#888;">Nenhum agendamento encontrado para estes filtros.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% with params="busca="|add:busca|add:"&data_inicio="|add:data_inicio_filtro|add:"&data_fim="|add:data_fim_filtro|add:"&status="|add:status_filtro|add:"&barbeiro="|add:barbeiro_filtro|stringformat:"s" %}
+<div class="paginacao">
+    {% if page_obj.has_previous %}
+        <a href="?page=1&{{ params }}" class="btn-acao btn-voltar">&laquo; Primeira</a>
+        <a href="?page={{ page_obj.previous_page_number }}&{{ params }}" class="btn-acao btn-voltar">Anterior</a>
+    {% endif %}
+
+    <span class="paginacao-info">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ params }}" class="btn-acao btn-voltar">Próxima</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&{{ params }}" class="btn-acao btn-voltar">Última &raquo;</a>
+    {% endif %}
+</div>
+{% endwith %}
+{% endblock %}

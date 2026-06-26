@@ -1,0 +1,211 @@
+{% extends 'agendamentos/base.html' %}
+{% load static %}
+
+{% block title %}Planos Mensais{% endblock %}
+{% block nav_planos %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .flex-container { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
+    .col-form { flex: 1; min-width: 300px; max-width: 420px; }
+    .col-tabela { flex: 2; min-width: 400px; }
+    .plano-box { background: var(--cor-sidebar); padding: 25px; border-radius: 8px; border: 1px solid var(--cor-borda); margin-bottom: 20px; }
+    .form-grupo { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+    .form-grupo label { color: #b0b0b0; font-weight: 600; font-size: 0.9rem; }
+    .form-grupo input, .form-grupo select, .form-grupo textarea {
+        padding: 10px; background: var(--cor-input); border: 1px solid #444;
+        color: #fff; border-radius: 6px; font-family: inherit;
+    }
+    .badge-ativo { background:#1b5e20; color:#81c784; padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; }
+    .badge-suspenso { background:#5d4037; color:var(--cor-destaque); padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; }
+    .badge-cancelado { background:#b71c1c; color:#ef9a9a; padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; }
+    .badge-vencendo { background:#c62828; color:#fff; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; }
+    .card-plano { background:var(--cor-sidebar); border:1px solid var(--cor-borda); border-radius:8px; padding:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+    .card-plano .valor { color:var(--cor-destaque); font-size:1.3rem; font-weight:bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Planos Mensais</h2>
+    <p>Gerencie assinaturas mensais com desconto configurável nos cortes.</p>
+</header>
+
+<div class="grid-metricas">
+    <div class="card-metrica" style="border-left:4px solid #81c784;">
+        <h3>Assinantes Ativos</h3>
+        <p class="valor-verde">{{ total_assinantes }}</p>
+    </div>
+    <div class="card-metrica" style="border-left:4px solid var(--cor-destaque);">
+        <h3>Receita Mensal Estimada</h3>
+        <p class="valor-laranja">R$ {{ receita_mensal_estimada|floatformat:2 }}</p>
+    </div>
+    <div class="card-metrica" style="border-left:4px solid #ef5350;">
+        <h3>Renovações em 7 dias</h3>
+        <p class="valor-vermelho">{{ vencimentos_proximos }}</p>
+    </div>
+</div>
+
+<div class="flex-container">
+
+    <div class="col-form">
+
+        <div class="plano-box">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-gift" aria-hidden="true"></span> Criar Novo Plano</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="criar_plano">
+                <div class="form-grupo">
+                    <label>Nome do Plano</label>
+                    <input type="text" name="nome" placeholder="Ex: Plano Ilimitado" required maxlength="100">
+                </div>
+                <div class="form-grupo">
+                    <label>Valor Mensal (R$)</label>
+                    <input type="number" step="0.01" name="valor_mensal" placeholder="89.90" required min="0.01" max="9999.99">
+                </div>
+                <div class="form-grupo">
+                    <label>Desconto nos cortes (%)</label>
+                    <input type="number" step="0.01" name="desconto_percentual" value="100.00" required min="0" max="100">
+                </div>
+                <div class="form-grupo">
+                    <label>Descrição / Benefícios</label>
+                    <textarea name="descricao" rows="3" placeholder="Cortes ilimitados..." maxlength="500"></textarea>
+                </div>
+                <button type="submit" class="btn-salvar">Criar Plano</button>
+            </form>
+        </div>
+
+        {% if planos %}
+        <div class="plano-box">
+            <h3 style="color:var(--cor-destaque); margin-top:0;"><span class="svg-icon icon-link" aria-hidden="true"></span> Vincular Cliente ao Plano</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="vincular_cliente">
+                <div class="form-grupo">
+                    <label>Cliente</label>
+                    <select name="cliente_id" required>
+                        <option value="">Selecione o cliente</option>
+                        {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nome }} — {{ c.telefone }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Plano</label>
+                    <select name="plano_id" required>
+                        <option value="">Selecione o plano</option>
+                        {% for p in planos %}
+                            <option value="{{ p.id }}">{{ p.nome }} — R$ {{ p.valor_mensal }}/mês — {{ p.desconto_percentual|floatformat:2 }}% nos cortes</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-salvar" style="background:#2e7d32;">Assinar Plano</button>
+            </form>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="col-tabela">
+
+        <h3 style="color:#fff; margin-top:0;">Planos Cadastrados</h3>
+        {% for p in planos %}
+        <div class="card-plano">
+            <div>
+                <strong style="color:#fff; font-size:1rem;">{{ p.nome }}</strong>
+                <br><span style="color:#b0b0b0; font-size:0.85rem;">{{ p.descricao|default:"Sem descrição" }}</span>
+                <br><small style="color:#888;">{{ p.desconto_percentual|floatformat:2 }}% de desconto nos cortes · {{ p.total_assinantes_ativos }} assinante(s) ativo(s)</small>
+            </div>
+            <div style="text-align:right;">
+                <p class="valor">R$ {{ p.valor_mensal }}<span style="font-size:0.7rem; color:#888;">/mês</span></p>
+                <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="desativar_plano">
+                    <input type="hidden" name="plano_id" value="{{ p.id }}">
+                    <button type="submit" style="background:transparent; color:#ef5350; border:1px solid #ef5350; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem; width:auto;">
+                        Arquivar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <p style="color:#888;">Nenhum plano cadastrado ainda.</p>
+        {% endfor %}
+
+        <h3 style="color:#fff; margin-top:30px;">Assinaturas Ativas</h3>
+        <div class="tabela-container scroll">
+            <table class="tabela-historico">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Plano</th>
+                        <th>Renovação</th>
+                        <th>Cortes/mês</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assinaturas %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'perfil_cliente' a.cliente.id %}" style="color:var(--cor-destaque); text-decoration:none;">
+                                <strong>{{ a.cliente.nome }}</strong>
+                            </a>
+                            <br><small style="color:#888;">{{ a.cliente.telefone }}</small>
+                        </td>
+                        <td>{{ a.plano.nome }}<br><small style="color:#81c784;">R$ {{ a.plano.valor_mensal }}/mês · {{ a.plano.desconto_percentual|floatformat:2 }}% nos cortes</small></td>
+                        <td>
+                            {{ a.data_renovacao|date:"d/m/Y" }}
+                            {% if a.data_renovacao <= today and a.status == 'ativo' %}
+                                <span class="badge-vencendo">VENCIDO</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center; font-size:1.1rem; font-weight:bold;">{{ a.cortes_no_mes_atual }}</td>
+                        <td>
+                            {% if a.status == 'ativo' %}<span class="badge-ativo">Ativo</span>
+                            {% elif a.status == 'suspenso' %}<span class="badge-suspenso">Suspenso</span>
+                            {% else %}<span class="badge-cancelado">Cancelado</span>{% endif %}
+                        </td>
+                        <td>
+                            <div style="display:flex; flex-direction:column; gap:5px; min-width:100px;">
+                                {% if a.status == 'ativo' %}
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="acao" value="renovar_assinatura">
+                                    <input type="hidden" name="assinatura_id" value="{{ a.id }}">
+                                    <button type="submit" style="background:#1b5e20; color:#81c784; border:none; padding:5px 8px; border-radius:4px; cursor:pointer; width:100%; font-size:0.8rem;"><span class="svg-icon icon-refresh" aria-hidden="true"></span> Renovar</button>
+                                </form>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="acao" value="alterar_status_assinatura">
+                                    <input type="hidden" name="assinatura_id" value="{{ a.id }}">
+                                    <input type="hidden" name="novo_status" value="cancelado">
+                                    <button type="submit" style="background:transparent; color:#ef5350; border:1px solid #ef5350; padding:5px 8px; border-radius:4px; cursor:pointer; width:100%; font-size:0.8rem;"><span class="svg-icon icon-x" aria-hidden="true"></span> Cancelar</button>
+                                </form>
+                                {% else %}
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="acao" value="alterar_status_assinatura">
+                                    <input type="hidden" name="assinatura_id" value="{{ a.id }}">
+                                    <input type="hidden" name="novo_status" value="ativo">
+                                    <button type="submit" style="background:#2e7d32; color:#fff; border:none; padding:5px 8px; border-radius:4px; cursor:pointer; width:100%; font-size:0.8rem;"><span class="svg-icon icon-check" aria-hidden="true"></span> Reativar</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">Nenhuma assinatura ativa.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'agendamentos/js/planos.js' %}"></script>
+{% endblock %}

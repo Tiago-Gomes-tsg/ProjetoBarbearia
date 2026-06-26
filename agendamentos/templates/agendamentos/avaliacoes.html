@@ -1,0 +1,173 @@
+{% extends 'agendamentos/base.html' %}
+{% block title %}Avaliações{% endblock %}
+{% block nav_avaliacoes %}ativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-aval { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 28px; }
+    .stat-card  { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 20px 24px; flex: 1; min-width: 140px; text-align: center; }
+    .stat-card .valor { font-size: 2.2rem; font-weight: bold; margin: 6px 0 0; line-height: 1; }
+    .stat-card .leg   { color: #888; font-size: 0.82rem; margin-top: 4px; }
+    .media-num { color: var(--cor-destaque); }
+
+    .barra-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .barra-bg   { flex: 1; background: var(--cor-input); border-radius: 4px; height: 10px; overflow: hidden; }
+    .barra-fill { height: 100%; border-radius: 4px; background: var(--cor-destaque); transition: width .6s; }
+
+    .filtro-bar {
+        background: var(--cor-card);
+        border: 1px solid var(--cor-borda);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 22px;
+    }
+    .filtro-bar form {
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap:14px;
+        align-items:end;
+        width:100%;
+    }
+    .filtro-grupo { display:flex; flex-direction:column; gap:5px; }
+    .filtro-grupo label { color:var(--cor-texto-suave); font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+    .filtro-bar select,
+    .filtro-bar input[type="date"] { padding: 9px 12px; background: var(--cor-input); border: 1px solid var(--cor-borda); color: var(--cor-texto-forte); border-radius: 6px; min-height: 40px; box-sizing:border-box; width:100%; }
+    .periodo-range {
+        display:grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap:10px;
+        grid-column: span 2;
+    }
+    .filtro-acoes { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn-filtro { min-height:38px; padding:8px 14px; border:none; border-radius:6px; background:var(--cor-destaque); color:var(--cor-btn-texto); font-weight:700; cursor:pointer; }
+    .link-limpar { min-height:38px; display:inline-flex; align-items:center; color:#888; font-size:0.83rem; text-decoration:none; padding:0 4px; }
+    .contador-filtro { color:var(--cor-muted); font-size:0.83rem; align-self:center; justify-self:end; }
+
+    .card-aval { background: var(--cor-sidebar); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
+    .estrelas  { color: var(--cor-destaque); font-size: 1.25rem; letter-spacing: 1px; }
+    .rating-star { color: var(--cor-destaque); width:.95em; height:.95em; margin-right:2px; vertical-align:-.12em; }
+    .rating-star.off { opacity:.22; }
+    .meta-atendimento { text-align:right; min-width:230px; }
+    .meta-atendimento p { margin:3px 0 0; color:#777; font-size:0.78rem; }
+    .meta-atendimento .servico { color:#b0b0b0; font-size:0.83rem; }
+    .meta-atendimento .data-principal { color:#e0e0e0; font-size:0.86rem; font-weight:600; }
+    .comentario-box {
+        margin-top: 11px; background: #252525; border-left: 3px solid var(--cor-destaque);
+        padding: 10px 14px; border-radius: 0 6px 6px 0;
+    }
+    .comentario-box p { margin: 0; color: #ccc; font-style: italic; font-size: 0.92rem; }
+    @media (max-width: 680px) {
+        .periodo-range { grid-column: auto; grid-template-columns: 1fr; }
+        .filtro-acoes { grid-column: auto; }
+        .contador-filtro { justify-self:start; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header>
+    <h2>Avaliações de Atendimento</h2>
+    <p>Feedback dos clientes sobre os serviços prestados.</p>
+</header>
+
+<div class="stats-aval">
+    <div class="stat-card" style="border-top:3px solid var(--cor-destaque);">
+        <p class="leg">Nota Média</p>
+        <p class="valor media-num">{{ media }}</p>
+        <p style="color:var(--cor-destaque); margin:4px 0 0; font-size:1.1rem;">
+            {% for i in "12345" %}<span class="svg-icon icon-star rating-star {% if forloop.counter > media|floatformat:"0"|add:"0" %}off{% endif %}" aria-hidden="true"></span>{% endfor %}
+        </p>
+    </div>
+    <div class="stat-card">
+        <p class="leg">Total de Avaliações</p>
+        <p class="valor" style="color:#81c784;">{{ total }}</p>
+    </div>
+    <div class="stat-card" style="flex:2; min-width:260px; text-align:left;">
+        <p class="leg" style="margin-bottom:12px;">Distribuição</p>
+        {% for nota, qtd in distribuicao.items %}
+        <div class="barra-row">
+            <span style="color:var(--cor-destaque); width:32px; text-align:right; font-size:0.9rem;">{{ nota }}<span class="svg-icon icon-star rating-star" aria-hidden="true"></span></span>
+            <div class="barra-bg">
+                <div class="barra-fill" style="width:{% if total > 0 %}{% widthratio qtd total 100 %}{% else %}0{% endif %}%"></div>
+            </div>
+            <span style="color:#666; font-size:0.82rem; width:28px;">{{ qtd }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="filtro-bar">
+    <form method="get">
+        {% if is_gerente %}
+        <div class="filtro-grupo">
+            <label for="filtro-barbeiro">Barbeiro</label>
+            <select id="filtro-barbeiro" name="barbeiro">
+                <option value="">Todos os barbeiros</option>
+                {% for b in barbeiros %}
+                    <option value="{{ b.id }}" {% if barbeiro_filtro == b.id|stringformat:"s" %}selected{% endif %}>
+                        {{ b.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="filtro-grupo">
+            <label for="filtro-nota">Nota</label>
+            <select id="filtro-nota" name="nota">
+                <option value="">Todas as notas</option>
+                {% for nota in "12345" %}
+                    <option value="{{ nota }}" {% if nota_filtro == nota %}selected{% endif %}>{{ nota }} estrela{% if nota != "1" %}s{% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label for="filtro-data-inicio">Atendimento de</label>
+            <input id="filtro-data-inicio" type="date" name="data_inicio" value="{{ data_inicio_filtro }}">
+        </div>
+        <div class="filtro-grupo">
+            <label for="filtro-data-fim">Até</label>
+            <input id="filtro-data-fim" type="date" name="data_fim" value="{{ data_fim_filtro }}">
+        </div>
+        <button type="submit" class="btn-filtro">Filtrar</button>
+        {% if barbeiro_filtro or nota_filtro or data_inicio_filtro or data_fim_filtro %}
+            <a href="{% url 'lista_avaliacoes' %}" class="link-limpar">Limpar</a>
+        {% endif %}
+        <span class="contador-filtro">{{ total }} avaliação(ões)</span>
+    </form>
+</div>
+
+{% for av in avaliacoes %}
+<div class="card-aval">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+            <strong style="color:#fff; font-size:1rem;">{{ av.agendamento.cliente.nome }}</strong>
+            <span style="color:#666; font-size:0.83rem; margin-left:8px;">{{ av.agendamento.cliente.telefone }}</span>
+            <br>
+            <span class="estrelas">{% for i in "12345" %}<span class="svg-icon icon-star rating-star {% if forloop.counter > av.nota %}off{% endif %}" aria-hidden="true"></span>{% endfor %}</span>
+            <span style="color:#888; font-size:0.85rem; margin-left:6px;">{{ av.nota }}/5</span>
+        </div>
+        <div class="meta-atendimento">
+            <p class="servico">
+                {{ av.agendamento.corte.nome }} · <strong>{{ av.agendamento.barbeiro.nome }}</strong>
+            </p>
+            <p class="data-principal">Atendimento: {{ av.agendamento.data|date:"d/m/Y" }} às {{ av.agendamento.horario }}</p>
+            <p>Respondida em: {{ av.data_avaliacao|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+    {% if av.comentario %}
+    <div class="comentario-box">
+        <p>"{{ av.comentario }}"</p>
+    </div>
+    {% endif %}
+</div>
+{% empty %}
+<div style="text-align:center; padding:55px; color:#666; background:var(--cor-sidebar); border-radius:8px; border:1px dashed var(--cor-borda);">
+    <p style="font-size:2rem; margin-bottom:10px;"><span class="svg-icon icon-star" aria-hidden="true"></span></p>
+    <p>Nenhuma avaliação recebida ainda.</p>
+    <p style="font-size:0.83rem; margin-top:6px;">
+        Os links de avaliação são gerados ao marcar um agendamento como <strong>concluído</strong>.
+        O barbeiro copia o link e envia ao cliente pelo WhatsApp.
+    </p>
+</div>
+{% endfor %}
+{% endblock %}
